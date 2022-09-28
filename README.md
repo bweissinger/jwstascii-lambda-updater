@@ -1,2 +1,2 @@
 # jwstascii-lambda-updater
-Lambda function for updating jwstascii.com
+AWS Lambda function for updating jwstascii.com
