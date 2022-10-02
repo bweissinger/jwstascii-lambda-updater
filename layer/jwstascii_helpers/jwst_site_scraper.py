@@ -128,6 +128,18 @@ class Scraper:
         return url
 
     def get_image_title(self, html: str) -> str:
+        """
+        Scrapes image title from page head meta tags.
+
+        Args:
+            html (str): Html of jwst image webpage.
+
+        Raises:
+            ValueError: Raises if the title cannot be located in the meta tags.
+
+        Returns:
+            str: A string containing the title of the image.
+        """
         try:
             soup = BeautifulSoup(html, "lxml", parse_only=SoupStrainer("meta"))
             return soup.find("meta", property="og:title")["content"]
