@@ -162,3 +162,17 @@ class TestGetImageDownloadUrl(TestCase):
     def test_no_links_found(self):
         html = ""
         self.assertRaises(ValueError, self.scraper.get_image_download_url, html)
+
+
+class TestGetImageTitle(TestCase):
+    def setUp(self) -> None:
+        self.scraper = Scraper()
+        return super().setUp()
+
+    def test_meta_title_property_not_defined(self):
+        html = '<meta property="og:locale" content="en_US"><title>Some title</title>'
+        self.assertRaises(ValueError, self.scraper.get_image_title, html)
+
+    def test_meta_title_property_retrieved(self):
+        html = '<meta property="og:title" content="Super Bangin Title"><title>Some title</title>'
+        self.assertEqual(self.scraper.get_image_title(html), "Super Bangin Title")

@@ -126,3 +126,10 @@ class Scraper:
             url = "https:" + url
 
         return url
+
+    def get_image_title(self, html: str) -> str:
+        try:
+            soup = BeautifulSoup(html, "lxml", parse_only=SoupStrainer("meta"))
+            return soup.find("meta", property="og:title")["content"]
+        except TypeError:
+            raise ValueError("Could not find title in meta tags. \n%s" % html)
