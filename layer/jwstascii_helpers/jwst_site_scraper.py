@@ -241,13 +241,10 @@ class Scraper:
             image_name = web_file_name
         image_name += "." + web_file_extension
 
-        request = requests.get(url, stream=True)
-        if request.status_code == 200:
-            with open(path.join(image_dir, image_name), "wb") as file:
-                for chunk in request:
-                    file.write(chunk)
-        else:
-            raise ValueError("Could not download image: %s" % url)
+        request = self.get_url_with_retries(url, {}, 5)
+        with open(path.join(image_dir, image_name), "wb") as file:
+            for chunk in request:
+                file.write(chunk)
 
     def __init__(self) -> None:
         self.page_num = 0

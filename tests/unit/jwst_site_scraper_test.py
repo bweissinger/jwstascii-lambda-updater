@@ -331,4 +331,4 @@ class TestDownloadImage(TestCase):
         with TemporaryDirectory() as tempdir:
             url = "https://stsci-opo.org/STScI-01GCCVK522S3SWM0TJN2ZA02ZZ.png"
             responses.add(responses.GET, url, status=404)
-            self.assertRaises(ValueError, self.scraper.download_image, url, tempdir)
+            self.assertRaises(RuntimeError, self.scraper.download_image, url, tempdir)
