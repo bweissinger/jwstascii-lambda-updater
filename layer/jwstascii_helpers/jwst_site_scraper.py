@@ -1,7 +1,7 @@
 import re
 import requests
 from bs4 import BeautifulSoup, SoupStrainer
-from typing import List
+from typing import List, Dict
 from os import path
 
 
@@ -151,28 +151,11 @@ class Scraper:
     def get_next_gallery_search_page(self):
         """
         Autoincrements the gallery search page num and gets the html of the next webpage in the jwst site gallery search. Sets the class gallery_page_html attribute. Can be used to search all pages since the page_num defaults to 0 on class instatiation.
-
-        Raises:
-            RuntimeError: Raised if the resulting response is bad.
-            urllib3.exceptions.MaxRetryError: Raised if number of https request retries exceed max.
         """
         self.page_num += 1
         url = "https://webbtelescope.org/resource-gallery/images"
         payload = {"Type": "Observations", "itemsPerPage": 100, "page": self.page_num}
-
-        retries = requests.adapters.Retry(
-            total=5, backoff_factor=0.75, status_forcelist=[500, 502, 503, 504]
-        )
-
-        with requests.session() as session:
-            session.mount(
-                "https://", requests.adapters.HTTPAdapter(max_retries=retries)
-            )
-            result = session.get(url, params=payload)
-            if not result.ok:
-                raise RuntimeError(
-                    "Html request response error\n%s payload: %s" % (url, str(payload))
-                )
+        result = self.get_url_with_retries(url, payload, 5)
         self.gallery_page_html = result.text
 
     def get_image_links_from_gallery_search(self) -> List[str]:
@@ -198,6 +181,47 @@ class Scraper:
             raise RuntimeError("No links found on page. \n%s")
 
         return links
+
+    def get_url_with_retries(
+        self,
+        url: str,
+        payload: Dict[str, object],
+        num_retries: int,
+        stream: bool = False,
+    ) -> requests.models.Response:
+        """
+        Gets response from url with retry on fail.
+
+        Args:
+            url (str): Url of target.
+            payload (Dict[str, object]): Params to include in url.
+            num_retries (int): Maximum number of retries on fail.
+            stream (bool, optional): Stream bool passed to requests. Defaults to False.
+
+        Raises:
+            RuntimeError: Raised if json result is not good.
+            urllib3.exceptions.MaxRetryError: Occurs if specified number of retries is surpassed.
+
+        Returns:
+            requests.models.Response: URL requests repsonse.
+        """
+        retries = requests.adapters.Retry(
+            total=num_retries,
+            backoff_factor=0.75,
+            status_forcelist=[500, 502, 503, 504],
+        )
+
+        with requests.session() as session:
+            session.mount(
+                "https://", requests.adapters.HTTPAdapter(max_retries=retries)
+            )
+            result = session.get(url, params=payload, stream=stream)
+            if not result.ok:
+                raise RuntimeError(
+                    "Html request response error\n%s payload: %s" % (url, str(payload))
+                )
+
+        return result
 
     def download_image(self, url: str, image_dir: str, image_name: str = None) -> None:
         web_file_name, web_file_extension = url.split("/")[-1].split(".")

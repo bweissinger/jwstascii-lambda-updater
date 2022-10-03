@@ -1,9 +1,10 @@
 import responses
 from unittest import TestCase
 from jwstascii_helpers.jwst_site_scraper import Scraper
-from urllib3.exceptions import MaxRetryError
 from tempfile import TemporaryDirectory
 from os import path
+from unittest.mock import patch
+from urllib3.exceptions import MaxRetryError
 
 
 class TestGetImageDescription(TestCase):
@@ -191,55 +192,12 @@ class TestGetNextGallerySearchPage(TestCase):
         responses.reset()
         return super().tearDown()
 
-    @responses.activate
-    def test_404_return(self):
-        responses.add(
-            responses.GET,
-            "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=1",
-            status=404,
-        )
-        self.assertRaises(RuntimeError, self.scraper.get_next_gallery_search_page)
+    @patch("jwstascii_helpers.jwst_site_scraper.Scraper.get_url_with_retries")
+    def test_exception_handling(self, mocked):
+        mocked.side_effect = MaxRetryError(None, "a")
+        self.scraper = Scraper()
+        self.assertRaises(MaxRetryError, self.scraper.get_next_gallery_search_page)
         self.assertTrue(self.scraper.gallery_page_html is None)
-
-    @responses.activate
-    def test_requests_retry(self):
-        json_codes = [500, 502, 503, 504]
-        for code in json_codes:
-            responses.add(
-                responses.GET,
-                "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=1",
-                status=code,
-            )
-            self.scraper = Scraper()
-            self.assertRaises(MaxRetryError, self.scraper.get_next_gallery_search_page)
-            self.assertTrue(self.scraper.gallery_page_html is None)
-
-    @responses.activate
-    def test_requests_call_correct(self):
-        responses.add(
-            responses.GET,
-            "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=1",
-            status=200,
-        )
-        responses.add(
-            responses.GET,
-            "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=2",
-            status=200,
-        )
-
-        self.scraper.get_next_gallery_search_page()
-        self.scraper.get_next_gallery_search_page()
-
-        calls = responses.calls
-        self.assertEqual(len(calls), 2)
-        self.assertEqual(
-            calls[0].request.url,
-            "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=1",
-        )
-        self.assertEqual(
-            calls[1].request.url,
-            "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=2",
-        )
 
     @responses.activate
     def test_html_attribute_set(self):
@@ -277,6 +235,65 @@ class TestSearchNextGalleryPage(TestCase):
         self.scraper.gallery_page_html = """<a href="/contents/image_url_2" class="link-wrap" title="some title"></a>"""
         self.assertRaises(
             RuntimeError, self.scraper.get_image_links_from_gallery_search
+        )
+
+
+class TestGetUrlWithRetries(TestCase):
+    def setUp(self) -> None:
+        self.scraper = Scraper()
+        self.url = "https://my_url.com/"
+        return super().setUp()
+
+    @responses.activate
+    def test_404_return(self):
+        responses.add(
+            responses.GET,
+            self.url,
+            status=404,
+        )
+        self.assertRaises(
+            RuntimeError, self.scraper.get_url_with_retries, self.url, {}, 5
+        )
+
+    @responses.activate
+    def test_requests_retry(self):
+        json_codes = [500, 502, 503, 504]
+        for code in json_codes:
+            responses.add(
+                responses.GET,
+                self.url,
+                status=code,
+            )
+            self.scraper = Scraper()
+            self.assertRaises(
+                MaxRetryError, self.scraper.get_url_with_retries, self.url, {}, 5
+            )
+
+    @responses.activate
+    def test_requests_call_correct(self):
+        responses.add(
+            responses.GET,
+            self.url,
+            status=200,
+        )
+        responses.add(
+            responses.GET,
+            self.url + "&a=1&b=2",
+            status=200,
+        )
+
+        self.scraper.get_url_with_retries(self.url, {}, 5)
+        self.scraper.get_url_with_retries(self.url, {"a": 1, "b": "2"}, 5)
+
+        calls = responses.calls
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(
+            calls[0].request.url,
+            self.url,
+        )
+        self.assertEqual(
+            calls[1].request.url,
+            "https://my_url.com/?a=1&b=2",
         )
 
 
