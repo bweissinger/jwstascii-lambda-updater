@@ -3,8 +3,6 @@ import requests
 from bs4 import BeautifulSoup, SoupStrainer
 from typing import List
 
-from responses import MaxRetryError
-
 
 class Scraper:
     def get_image_description(self, html: str) -> str:
