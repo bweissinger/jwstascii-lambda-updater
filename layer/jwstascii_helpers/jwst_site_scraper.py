@@ -1,6 +1,9 @@
 import re
+import requests
 from bs4 import BeautifulSoup, SoupStrainer
 from typing import List
+
+from responses import MaxRetryError
 
 
 class Scraper:
@@ -145,3 +148,49 @@ class Scraper:
             return soup.find("meta", property="og:title")["content"]
         except TypeError:
             raise ValueError("Could not find title in meta tags. \n%s" % html)
+
+    def search_next_gallery_page(self) -> List[str]:
+        """
+        Queries the next jwst site gallery page and returns a list of image page urls.
+
+        Raises:
+            RuntimeError: Raised on 404 or similar response, or if no links are found on page
+            urllib3.exceptions.MaxRetryError: Raised after number of max https requests are exceeded.
+
+        Returns:
+            List[str]: A list of the found image urls.
+        """
+        self.page_num += 1
+        url = "https://webbtelescope.org/resource-gallery/images"
+        payload = {"Type": "Observations", "itemsPerPage": 100, "page": self.page_num}
+
+        retries = requests.adapters.Retry(
+            total=5, backoff_factor=0.75, status_forcelist=[500, 502, 503, 504]
+        )
+
+        with requests.session() as session:
+            session.mount(
+                "https://", requests.adapters.HTTPAdapter(max_retries=retries)
+            )
+            result = session.get(url, params=payload)
+            if not result.ok:
+                raise RuntimeError(
+                    "Html request response error\n%s payload: %s" % (url, str(payload))
+                )
+
+        soup = BeautifulSoup(result.text, "lxml")
+        search = soup.find_all(
+            "a", {"href": re.compile("/contents/media/images/.*"), "class": "link-wrap"}
+        )
+
+        links = []
+        for a in search:
+            links.append("https://webbtelescope.org" + a["href"])
+
+        if not links:
+            raise RuntimeError("No links found on page. \n%s")
+
+        return links
+
+    def __init__(self) -> None:
+        self.page_num = 0

@@ -1,5 +1,7 @@
+import responses
 from unittest import TestCase
 from jwstascii_helpers.jwst_site_scraper import Scraper
+from urllib3.exceptions import MaxRetryError
 
 
 class TestGetImageDescription(TestCase):
@@ -176,3 +178,86 @@ class TestGetImageTitle(TestCase):
     def test_meta_title_property_retrieved(self):
         html = '<meta property="og:title" content="Super Bangin Title"><title>Some title</title>'
         self.assertEqual(self.scraper.get_image_title(html), "Super Bangin Title")
+
+
+class TestSearchNextGalleryPage(TestCase):
+    def setUp(self) -> None:
+        self.scraper = Scraper()
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        responses.reset()
+        return super().tearDown()
+
+    @responses.activate
+    def test_404_return(self):
+        responses.add(
+            responses.GET,
+            "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=1",
+            status=404,
+        )
+        self.assertRaises(RuntimeError, self.scraper.search_next_gallery_page)
+
+    @responses.activate
+    def test_requests_retry(self):
+        json_codes = [500, 502, 503, 504]
+        for code in json_codes:
+            responses.add(
+                responses.GET,
+                "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=1",
+                status=code,
+                body="""<a href="/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&amp;itemsPerPage=100" class="link-wrap" title="some title">/a>""",
+            )
+            self.scraper = Scraper()
+            self.assertRaises(MaxRetryError, self.scraper.search_next_gallery_page)
+
+    @responses.activate
+    def test_valid_links_found(self):
+        responses.add(
+            responses.GET,
+            "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=1",
+            status=200,
+            body="""<a href="/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&amp;itemsPerPage=100" class="link-wrap" title="some title"></a><a href="/contents/media/images/image_url_2" class="link-wrap" title="some title"></a><a href="/contents/image_url_2" class="link-wrap" title="some title"></a>""",
+        )
+        expected = [
+            "https://webbtelescope.org/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&itemsPerPage=100",
+            "https://webbtelescope.org/contents/media/images/image_url_2",
+        ]
+        self.assertEqual(self.scraper.search_next_gallery_page(), expected)
+
+    @responses.activate
+    def test_requests_call_correct(self):
+        responses.add(
+            responses.GET,
+            "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=1",
+            status=200,
+            body="""<a href="/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&amp;itemsPerPage=100" class="link-wrap" title="some title"></a><a href="/contents/media/images/image_url_2" class="link-wrap" title="some title"></a><a href="/contents/image_url_2" class="link-wrap" title="some title"></a>""",
+        )
+        responses.add(
+            responses.GET,
+            "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=2",
+            status=200,
+            body="""<a href="/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&amp;itemsPerPage=100" class="link-wrap" title="some title"></a>""",
+        )
+        self.scraper.search_next_gallery_page()
+        self.scraper.search_next_gallery_page()
+        calls = responses.calls
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(
+            calls[0].request.url,
+            "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=1",
+        )
+        self.assertEqual(
+            calls[1].request.url,
+            "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=2",
+        )
+
+    @responses.activate
+    def test_no_valid_links_found(self):
+        responses.add(
+            responses.GET,
+            "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=1",
+            status=200,
+            body="""<a href="/contents/image_url_2" class="link-wrap" title="some title"></a>""",
+        )
+        self.assertRaises(RuntimeError, self.scraper.search_next_gallery_page)
