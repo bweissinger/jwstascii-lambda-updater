@@ -212,7 +212,7 @@ class TestGetNextGallerySearchPage(TestCase):
         self.assertEqual(self.scraper.gallery_page_html, html)
 
 
-class TestSearchNextGalleryPage(TestCase):
+class TestGetImageLinksFromGallerySearch(TestCase):
     def setUp(self) -> None:
         self.scraper = Scraper()
         return super().setUp()
