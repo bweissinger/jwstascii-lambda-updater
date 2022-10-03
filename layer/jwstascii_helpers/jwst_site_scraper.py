@@ -224,6 +224,17 @@ class Scraper:
         return result
 
     def download_image(self, url: str, image_dir: str, image_name: str = None) -> None:
+        """
+        Downloads requested image to the specified location.
+
+        Args:
+            url (str): Url of the target image.
+            image_dir (str): Parent directory to store image in.
+            image_name (str, optional): Use a custom image name. Do not include the file extension, this is parsed from the image url. Defaults to None.
+
+        Raises:
+            ValueError: Raised if request is bad.
+        """
         web_file_name, web_file_extension = url.split("/")[-1].split(".")
 
         if not image_name:
