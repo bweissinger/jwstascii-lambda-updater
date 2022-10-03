@@ -180,7 +180,7 @@ class TestGetImageTitle(TestCase):
         self.assertEqual(self.scraper.get_image_title(html), "Super Bangin Title")
 
 
-class TestSearchNextGalleryPage(TestCase):
+class TestGetNextGallerySearchPage(TestCase):
     def setUp(self) -> None:
         self.scraper = Scraper()
         return super().setUp()
@@ -196,7 +196,8 @@ class TestSearchNextGalleryPage(TestCase):
             "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=1",
             status=404,
         )
-        self.assertRaises(RuntimeError, self.scraper.search_next_gallery_page)
+        self.assertRaises(RuntimeError, self.scraper.get_next_gallery_search_page)
+        self.assertTrue(self.scraper.gallery_page_html is None)
 
     @responses.activate
     def test_requests_retry(self):
@@ -206,24 +207,10 @@ class TestSearchNextGalleryPage(TestCase):
                 responses.GET,
                 "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=1",
                 status=code,
-                body="""<a href="/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&amp;itemsPerPage=100" class="link-wrap" title="some title">/a>""",
             )
             self.scraper = Scraper()
-            self.assertRaises(MaxRetryError, self.scraper.search_next_gallery_page)
-
-    @responses.activate
-    def test_valid_links_found(self):
-        responses.add(
-            responses.GET,
-            "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=1",
-            status=200,
-            body="""<a href="/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&amp;itemsPerPage=100" class="link-wrap" title="some title"></a><a href="/contents/media/images/image_url_2" class="link-wrap" title="some title"></a><a href="/contents/image_url_2" class="link-wrap" title="some title"></a>""",
-        )
-        expected = [
-            "https://webbtelescope.org/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&itemsPerPage=100",
-            "https://webbtelescope.org/contents/media/images/image_url_2",
-        ]
-        self.assertEqual(self.scraper.search_next_gallery_page(), expected)
+            self.assertRaises(MaxRetryError, self.scraper.get_next_gallery_search_page)
+            self.assertTrue(self.scraper.gallery_page_html is None)
 
     @responses.activate
     def test_requests_call_correct(self):
@@ -231,16 +218,16 @@ class TestSearchNextGalleryPage(TestCase):
             responses.GET,
             "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=1",
             status=200,
-            body="""<a href="/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&amp;itemsPerPage=100" class="link-wrap" title="some title"></a><a href="/contents/media/images/image_url_2" class="link-wrap" title="some title"></a><a href="/contents/image_url_2" class="link-wrap" title="some title"></a>""",
         )
         responses.add(
             responses.GET,
             "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=2",
             status=200,
-            body="""<a href="/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&amp;itemsPerPage=100" class="link-wrap" title="some title"></a>""",
         )
-        self.scraper.search_next_gallery_page()
-        self.scraper.search_next_gallery_page()
+
+        self.scraper.get_next_gallery_search_page()
+        self.scraper.get_next_gallery_search_page()
+
         calls = responses.calls
         self.assertEqual(len(calls), 2)
         self.assertEqual(
@@ -253,11 +240,39 @@ class TestSearchNextGalleryPage(TestCase):
         )
 
     @responses.activate
-    def test_no_valid_links_found(self):
+    def test_html_attribute_set(self):
+        html = "<p>My super sweet html</p>"
         responses.add(
             responses.GET,
             "https://webbtelescope.org/resource-gallery/images?Type=Observations&itemsPerPage=100&page=1",
             status=200,
-            body="""<a href="/contents/image_url_2" class="link-wrap" title="some title"></a>""",
+            body=html,
         )
-        self.assertRaises(RuntimeError, self.scraper.search_next_gallery_page)
+        self.scraper.get_next_gallery_search_page()
+        self.assertEqual(self.scraper.gallery_page_html, html)
+
+
+class TestSearchNextGalleryPage(TestCase):
+    def setUp(self) -> None:
+        self.scraper = Scraper()
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        responses.reset()
+        return super().tearDown()
+
+    @responses.activate
+    def test_valid_links_found(self):
+        self.scraper.gallery_page_html = """<a href="/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&amp;itemsPerPage=100" class="link-wrap" title="some title"></a><a href="/contents/media/images/image_url_2" class="link-wrap" title="some title"></a><a href="/contents/image_url_3" class="link-wrap" title="some title"></a>"""
+        expected = [
+            "https://webbtelescope.org/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&itemsPerPage=100",
+            "https://webbtelescope.org/contents/media/images/image_url_2",
+        ]
+        self.assertEqual(self.scraper.get_image_links_from_gallery_search(), expected)
+
+    @responses.activate
+    def test_no_valid_links_found(self):
+        self.scraper.gallery_page_html = """<a href="/contents/image_url_2" class="link-wrap" title="some title"></a>"""
+        self.assertRaises(
+            RuntimeError, self.scraper.get_image_links_from_gallery_search
+        )

@@ -147,16 +147,13 @@ class Scraper:
         except TypeError:
             raise ValueError("Could not find title in meta tags. \n%s" % html)
 
-    def search_next_gallery_page(self) -> List[str]:
+    def get_next_gallery_search_page(self):
         """
-        Queries the next jwst site gallery page and returns a list of image page urls.
+        Autoincrements the gallery search page num and gets the html of the next webpage in the jwst site gallery search. Sets the class gallery_page_html attribute. Can be used to search all pages since the page_num defaults to 0 on class instatiation.
 
         Raises:
-            RuntimeError: Raised on 404 or similar response, or if no links are found on page
-            urllib3.exceptions.MaxRetryError: Raised after number of max https requests are exceeded.
-
-        Returns:
-            List[str]: A list of the found image urls.
+            RuntimeError: Raised if the resulting response is bad.
+            urllib3.exceptions.MaxRetryError: Raised if number of https request retries exceed max.
         """
         self.page_num += 1
         url = "https://webbtelescope.org/resource-gallery/images"
@@ -175,8 +172,19 @@ class Scraper:
                 raise RuntimeError(
                     "Html request response error\n%s payload: %s" % (url, str(payload))
                 )
+        self.gallery_page_html = result.text
 
-        soup = BeautifulSoup(result.text, "lxml")
+    def get_image_links_from_gallery_search(self) -> List[str]:
+        """
+        Searches the current gallery page and returns all valid image page urls.
+
+        Raises:
+            RuntimeError: Raised if no valid image links are found.
+
+        Returns:
+            List[str]: A list of all valid image urls.
+        """
+        soup = BeautifulSoup(self.gallery_page_html, "lxml")
         search = soup.find_all(
             "a", {"href": re.compile("/contents/media/images/.*"), "class": "link-wrap"}
         )
@@ -192,3 +200,4 @@ class Scraper:
 
     def __init__(self) -> None:
         self.page_num = 0
+        self.gallery_page_html = None
