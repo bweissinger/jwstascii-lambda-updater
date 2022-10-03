@@ -2,6 +2,7 @@ import re
 import requests
 from bs4 import BeautifulSoup, SoupStrainer
 from typing import List
+from os import path
 
 
 class Scraper:
@@ -197,6 +198,21 @@ class Scraper:
             raise RuntimeError("No links found on page. \n%s")
 
         return links
+
+    def download_image(self, url: str, image_dir: str, image_name: str = None) -> None:
+        web_file_name, web_file_extension = url.split("/")[-1].split(".")
+
+        if not image_name:
+            image_name = web_file_name
+        image_name += "." + web_file_extension
+
+        request = requests.get(url, stream=True)
+        if request.status_code == 200:
+            with open(path.join(image_dir, image_name), "wb") as file:
+                for chunk in request:
+                    file.write(chunk)
+        else:
+            raise ValueError("Could not download image: %s" % url)
 
     def __init__(self) -> None:
         self.page_num = 0

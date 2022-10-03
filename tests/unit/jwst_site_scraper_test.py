@@ -2,6 +2,8 @@ import responses
 from unittest import TestCase
 from jwstascii_helpers.jwst_site_scraper import Scraper
 from urllib3.exceptions import MaxRetryError
+from tempfile import TemporaryDirectory
+from os import path
 
 
 class TestGetImageDescription(TestCase):
@@ -276,3 +278,40 @@ class TestSearchNextGalleryPage(TestCase):
         self.assertRaises(
             RuntimeError, self.scraper.get_image_links_from_gallery_search
         )
+
+
+class TestDownloadImage(TestCase):
+    def setUp(self) -> None:
+        self.scraper = Scraper()
+        return super().setUp()
+
+    @responses.activate
+    def test_custom_image_name(self):
+        with TemporaryDirectory() as tempdir:
+            url = "https://stsci-opo.org/STScI-01GCCVK522S3SWM0TJN2ZA02ZZ.png"
+            with open("tests/resources/images/test_image.png", "rb") as file:
+                image = file.read()
+            responses.add(responses.GET, url, status=200, body=image)
+            self.scraper.download_image(url, tempdir, "image")
+            with open(path.join(tempdir, "image.png"), "rb") as dl_image:
+                self.assertEqual(image, dl_image.read())
+
+    @responses.activate
+    def test_image_downloaded_successfully(self):
+        with TemporaryDirectory() as tempdir:
+            url = "https://stsci-opo.org/STScI-01GCCVK522S3SWM0TJN2ZA02ZZ.png"
+            with open("tests/resources/images/test_image.png", "rb") as file:
+                image = file.read()
+            responses.add(responses.GET, url, status=200, body=image)
+            self.scraper.download_image(url, tempdir)
+            with open(
+                path.join(tempdir, "STScI-01GCCVK522S3SWM0TJN2ZA02ZZ.png"), "rb"
+            ) as dl_image:
+                self.assertEqual(image, dl_image.read())
+
+    @responses.activate
+    def test_image_url_invalid(self):
+        with TemporaryDirectory() as tempdir:
+            url = "https://stsci-opo.org/STScI-01GCCVK522S3SWM0TJN2ZA02ZZ.png"
+            responses.add(responses.GET, url, status=404)
+            self.assertRaises(ValueError, self.scraper.download_image, url, tempdir)
