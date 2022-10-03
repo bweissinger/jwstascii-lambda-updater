@@ -158,7 +158,9 @@ class Scraper:
         result = self.get_url_with_retries(url, payload, 5)
         self.gallery_page_html = result.text
 
-    def get_image_links_from_gallery_search(self) -> List[str]:
+    def get_image_links_from_gallery_search(
+        self, ignore_regex_strings: List[str] = []
+    ) -> List[str]:
         """
         Searches the current gallery page and returns all valid image page urls.
 
@@ -173,9 +175,20 @@ class Scraper:
             "a", {"href": re.compile("/contents/media/images/.*"), "class": "link-wrap"}
         )
 
+        regex_list = []
+        for regex_string in ignore_regex_strings:
+            regex_list.append(re.compile(regex_string))
+
         links = []
+        matched = False
         for a in search:
-            links.append("https://webbtelescope.org" + a["href"])
+            for regex in regex_list:
+                if re.match(regex, a["title"]):
+                    matched = True
+                    break
+            if not matched:
+                links.append("https://webbtelescope.org" + a["href"])
+            matched = False
 
         if not links:
             raise RuntimeError("No links found on page. \n%s")

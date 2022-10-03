@@ -221,7 +221,6 @@ class TestGetImageLinksFromGallerySearch(TestCase):
         responses.reset()
         return super().tearDown()
 
-    @responses.activate
     def test_valid_links_found(self):
         self.scraper.gallery_page_html = """<a href="/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&amp;itemsPerPage=100" class="link-wrap" title="some title"></a><a href="/contents/media/images/image_url_2" class="link-wrap" title="some title"></a><a href="/contents/image_url_3" class="link-wrap" title="some title"></a>"""
         expected = [
@@ -230,11 +229,22 @@ class TestGetImageLinksFromGallerySearch(TestCase):
         ]
         self.assertEqual(self.scraper.get_image_links_from_gallery_search(), expected)
 
-    @responses.activate
     def test_no_valid_links_found(self):
         self.scraper.gallery_page_html = """<a href="/contents/image_url_2" class="link-wrap" title="some title"></a>"""
         self.assertRaises(
             RuntimeError, self.scraper.get_image_links_from_gallery_search
+        )
+
+    def test_ignore_list(self):
+        self.scraper.gallery_page_html = """<a href="/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&amp;itemsPerPage=100" class="link-wrap" title="some title"></a><a href="/contents/media/images/image_url_2" class="link-wrap" title="other title"></a></a><a href="/contents/media/images/image_url_3" class="link-wrap" title="Third title"></a>"""
+        expected = [
+            "https://webbtelescope.org/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&itemsPerPage=100"
+        ]
+        self.assertEqual(
+            self.scraper.get_image_links_from_gallery_search(
+                ignore_regex_strings=["(?i)other.*", "(?i)third.*"]
+            ),
+            expected,
         )
 
 
