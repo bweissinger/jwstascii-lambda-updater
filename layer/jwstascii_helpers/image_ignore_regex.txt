@@ -1,0 +1,25 @@
+(?i).*hubble.*
+(?i).*vlt.*
+(?i).*alma.*
+(?i).*chandra.*
+(?i).*spitzer.*
+(?i).*vla.*
+(?i).*dawn.*
+(?i).*new horizons.*
+(?i).*voyager 2.*
+(?i).*cassini.*
+(?i).*juno.*
+(?i).*galileo.*
+(?i).*dss 2.*
+(?i).*deep space 1.*
+(?i).*johannes-kepler observatory.*
+(?i).*ntt.*
+(?i).*xmm-newton.*
+(?i).*mayall.*
+(?i).*eso.*
+
+
+
+
+
+
