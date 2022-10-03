@@ -182,8 +182,9 @@ class Scraper:
         links = []
         matched = False
         for a in search:
+            paragraph = a.find("p")
             for regex in regex_list:
-                if re.match(regex, a["title"]):
+                if re.match(regex, paragraph.text):
                     matched = True
                     break
             if not matched:

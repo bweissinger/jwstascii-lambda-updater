@@ -236,13 +236,14 @@ class TestGetImageLinksFromGallerySearch(TestCase):
         )
 
     def test_ignore_list(self):
-        self.scraper.gallery_page_html = """<a href="/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&amp;itemsPerPage=100" class="link-wrap" title="some title"></a><a href="/contents/media/images/image_url_2" class="link-wrap" title="other title"></a></a><a href="/contents/media/images/image_url_3" class="link-wrap" title="Third title"></a>"""
+        with open("tests/resources/html/gallery_image_links.html", "r") as file:
+            self.scraper.gallery_page_html = file.read()
         expected = [
-            "https://webbtelescope.org/contents/media/images/2022/047/01GE39QQCQ52JSF02RYJYCHH7J?Type=Observations&itemsPerPage=100"
+            "https://webbtelescope.org/contents/media/images/2022/035/01G7DCWB7137MYJ05CSH1Q5Z1Z?Type=Observations&itemsPerPage=100"
         ]
         self.assertEqual(
             self.scraper.get_image_links_from_gallery_search(
-                ignore_regex_strings=["(?i)other.*", "(?i)third.*"]
+                ignore_regex_strings=["(?i).*hubble.*", "(?i).*Galileo.*"]
             ),
             expected,
         )
