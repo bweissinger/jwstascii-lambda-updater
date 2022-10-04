@@ -1,5 +1,7 @@
 import jinja2
 from pathlib import Path
+from os import makedirs
+from os.path import exists
 
 
 def get_jinja_template(template_path: Path) -> jinja2.Template:
@@ -34,5 +36,11 @@ def generate_main_index(
         title=title,
         page_parent_dir=parent_dir_of_new_page,
     )
+    write_file(output_path, output_html)
+
+
+def write_file(output_path: Path, file_content: str) -> None:
+    if not exists(output_path.parent):
+        makedirs(output_path.parent)
     with open(output_path, "w") as file:
-        file.write(output_html)
+        file.write(file_content)

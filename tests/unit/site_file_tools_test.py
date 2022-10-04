@@ -1,8 +1,10 @@
+from distutils.file_util import write_file
 from unittest import TestCase
 from tempfile import TemporaryDirectory
 from pathlib import Path
 from jinja2.environment import Template
 from jinja2.exceptions import TemplateNotFound
+from os import makedirs
 
 from jwstascii_helpers import site_file_tools
 
@@ -44,3 +46,33 @@ class TestGenerateMainIndex(TestCase):
                 )
                 with open(path_of_expected, "r") as expected:
                     self.assertEqual(generated.read(), expected.read())
+
+
+class TestWriteFile(TestCase):
+    def test_file_written_in_new_directory(self):
+        with TemporaryDirectory() as tempdir:
+            output_path = Path(tempdir, "new_dir", "my_file.txt")
+            site_file_tools.write_file(output_path, "contents")
+
+            with open(output_path, "r") as file:
+                self.assertEqual(file.read(), "contents")
+
+    def test_directory_not_overwritten(self):
+        with TemporaryDirectory() as tempdir:
+            output_path = Path(tempdir, "new_dir", "do_not_erase.txt")
+            site_file_tools.write_file(output_path, "contents")
+
+            other_path = Path(tempdir, "new_dir/newer_dir", "file.txt")
+            site_file_tools.write_file(other_path, "b")
+
+            with open(output_path, "r") as file:
+                self.assertEqual(file.read(), "contents")
+
+    def test_handles_parent_dir_existing(self):
+        with TemporaryDirectory() as tempdir:
+            makedirs(Path(tempdir, "new_dir"))
+            output_path = Path(tempdir, "new_dir", "my_file.txt")
+            site_file_tools.write_file(output_path, "contents")
+
+            with open(output_path, "r") as file:
+                self.assertEqual(file.read(), "contents")
