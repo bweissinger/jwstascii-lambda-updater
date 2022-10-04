@@ -1,4 +1,3 @@
-from distutils.file_util import write_file
 from unittest import TestCase
 from tempfile import TemporaryDirectory
 from pathlib import Path
