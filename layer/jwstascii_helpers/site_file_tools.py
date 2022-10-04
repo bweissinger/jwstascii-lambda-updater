@@ -40,6 +40,14 @@ def generate_main_index(
 
 
 def write_file(output_path: Path, file_content: str) -> None:
+    """
+    Writes contents to file at specified path. Any necessary directories will be created
+    in the process.
+
+    Args:
+        output_path (Path): Output path of the file.
+        file_content (str): Contents to be written to the file.
+    """
     if not exists(output_path.parent):
         makedirs(output_path.parent)
     with open(output_path, "w") as file:
