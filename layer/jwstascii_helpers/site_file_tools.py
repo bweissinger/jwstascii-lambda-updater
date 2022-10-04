@@ -20,7 +20,7 @@ def get_jinja_template(template_path: Path) -> jinja2.Template:
 
 
 def generate_main_index(
-    template_dir: Path, output_path: Path, title: str, parent_dir_of_new_page: str
+    template_dir: Path, output_path: Path, title: str, parent_dir_of_new_page: Path
 ) -> None:
     """
     Generates the main index html file from a jinja template.
@@ -29,12 +29,12 @@ def generate_main_index(
         template_dir (Path): Path of directory where jinja templates are stored.
         output_path (Path): Path to save the generated html file.
         title (str): Title string to render in template.
-        parent_dir_of_new_page (str): Path to the page that the index file will redirect to.
+        parent_dir_of_new_page (Path): Path to the page that the index file will redirect to.
     """
     template = get_jinja_template(Path(template_dir, "main_index.html"))
     output_html = template.render(
         title=title,
-        page_parent_dir=parent_dir_of_new_page,
+        page_parent_dir=str(parent_dir_of_new_page),
     )
     write_file(output_path, output_html)
 

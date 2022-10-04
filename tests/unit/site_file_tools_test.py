@@ -36,7 +36,7 @@ class TestGenerateMainIndex(TestCase):
         with TemporaryDirectory() as tempdir:
             output_path = Path(tempdir, "output.html")
             site_file_tools.generate_main_index(
-                TEMPLATE_DIR, output_path, "my title", "a/b/c"
+                TEMPLATE_DIR, output_path, "my title", Path("a/b/c")
             )
 
             with open(Path(output_path), "r") as generated:
