@@ -1,4 +1,7 @@
 from rvmendillo_image_to_ascii import ImageToASCII
+from os import makedirs
+from os.path import exists
+from pathlib import Path
 
 
 def convert_image(image_path: str, num_columns: int, output_path: str) -> None:
@@ -10,8 +13,13 @@ def convert_image(image_path: str, num_columns: int, output_path: str) -> None:
         image_path (str): File path of the input image.
         num_columns (int): Number of text columns to use during conversion.
             200 columns is a good starting point.
-        output_path (str): File path for the output image.
+        output_path (str): File path for the output image. Directories will be
+            created if they do not exist.
     """
     app = ImageToASCII(image_path)
     image = app.generate_colored_ascii_image(num_columns)
+
+    parent_directory = Path(output_path).parent
+    if not exists(parent_directory):
+        makedirs(parent_directory)
     app.save_image(image, output_path)
