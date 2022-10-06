@@ -1,8 +1,10 @@
+from datetime import date
 import jinja2
 from pathlib import Path
 from os import makedirs
 from os.path import exists
 from typing import Dict
+from bs4 import BeautifulSoup
 
 
 def get_jinja_template(template_path: Path) -> jinja2.Template:
@@ -50,3 +52,47 @@ def generate_from_template(
     template = get_jinja_template(template_path)
     output_html = template.render(**vars_dict)
     write_file(output_path, output_html)
+
+
+def update_prior_page(
+    path_to_html: Path, path_to_new_html: Path, new_page_date: date
+) -> None:
+    """Used for updating the prior displayed html page. Changes styling and adds link to
+        the new page.
+
+    Args:
+        path_to_html (Path): Path of the previous page.
+        path_to_new_html (Path): Path to the new page. Used as a link reference.
+        new_page_date (date): The date of the new page. Ensures the date is correct,
+            since updates may not be consistently daily.
+    """
+    with open(path_to_html, "r") as file:
+        soup = BeautifulSoup(file.read(), "lxml")
+
+    tomorrow_link = soup.find("li", {"id": "tomorrow_link"})
+    new_html = '<li id="tomorrow_link"><a href="%s">%s</a></li>' % (
+        path_to_new_html,
+        new_page_date.strftime("%d|%m|%y"),
+    )
+    tag = BeautifulSoup(new_html, "html.parser")
+    try:
+        tomorrow_link.replace_with(tag)
+    except AttributeError as e:
+        raise RuntimeError(
+            """It looks like the next page element was not found, cannot set 
+            the href on a null reference. \n%s"""
+            % e
+        )
+
+    stylesheet_tag = soup.find("link", {"rel": "stylesheet"})
+
+    try:
+        stylesheet_tag["href"] = "/styles/main.css"
+    except AttributeError as e:
+        raise RuntimeError(
+            """It looks like the next page element was not found, cannot set 
+            the href on a null reference. \n%s"""
+            % e
+        )
+
+    write_file(path_to_html, soup.prettify())

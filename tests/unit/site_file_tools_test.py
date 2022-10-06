@@ -4,6 +4,9 @@ from pathlib import Path
 from jinja2.environment import Template
 from jinja2.exceptions import TemplateNotFound
 from os import makedirs
+from freezegun import freeze_time
+from unittest.mock import patch, mock_open
+from datetime import date
 
 from jwstascii_helpers import site_file_tools
 
@@ -113,3 +116,45 @@ class TestWriteFile(TestCase):
 
             with open(output_path, "r") as file:
                 self.assertEqual(file.read(), "contents")
+
+
+@freeze_time("2000-01-01")
+@patch("jwstascii_helpers.site_file_tools.write_file")
+@patch("builtins.open", new_callable=mock_open, read_data="")
+class TestUpdatePriorPage(TestCase):
+    link_html = '<li id="tomorrow_link"><a href="a">b</a></li>'
+    stylesheet_html = '<link href="/styles/main.css" rel="stylesheet"/>'
+
+    def test_link_not_found(self, mocked_open, write_file):
+        self.assertRaises(
+            RuntimeError,
+            site_file_tools.update_prior_page,
+            Path(""),
+            Path("outpath.html"),
+            date.today(),
+        )
+
+    def test_stylesheet_not_found(self, mocked_open, write_file):
+        self.assertRaises(
+            RuntimeError,
+            site_file_tools.update_prior_page,
+            Path(""),
+            Path("outpath.html"),
+            date.today(),
+        )
+
+    @patch("jwstascii_helpers.site_file_tools.BeautifulSoup")
+    def test_prettify_called(self, bs, mocked_open, write_file):
+        open().read.return_value = self.stylesheet_html + self.link_html
+        site_file_tools.update_prior_page(Path("file_path"), Path(""), date.today())
+        bs().prettify.assert_called_once()
+
+    def test_properly_updated(self, mocked_open, write_file):
+        open().read.return_value = self.stylesheet_html + self.link_html
+        site_file_tools.update_prior_page(
+            Path("file_path"), Path("new_file_path"), date.today()
+        )
+        write_file.assert_called_once_with(
+            Path("file_path"),
+            '<html>\n <head>\n  <link href="/styles/main.css" rel="stylesheet"/>\n </head>\n <body>\n  <li id="tomorrow_link">\n   <a href="new_file_path">\n    01|01|00\n   </a>\n  </li>\n </body>\n</html>',
+        )
