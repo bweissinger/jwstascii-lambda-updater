@@ -66,9 +66,7 @@ def update_prior_page(
         new_page_date (date): The date of the new page. Ensures the date is correct,
             since updates may not be consistently daily.
     """
-    with open(path_to_html, "r") as file:
-        soup = BeautifulSoup(file.read(), "lxml")
-
+    soup = soup_from_file(path_to_html)
     tomorrow_link = soup.find("li", {"id": "tomorrow_link"})
     new_html = '<li id="tomorrow_link"><a href="%s">%s</a></li>' % (
         path_to_new_html,
@@ -79,7 +77,7 @@ def update_prior_page(
         tomorrow_link.replace_with(tag)
     except AttributeError as e:
         raise RuntimeError(
-            """It looks like the next page element was not found, cannot set 
+            """It looks like the next page element was not found, cannot set
             the href on a null reference. \n%s"""
             % e
         )
@@ -90,9 +88,14 @@ def update_prior_page(
         stylesheet_tag["href"] = "/styles/main.css"
     except AttributeError as e:
         raise RuntimeError(
-            """It looks like the next page element was not found, cannot set 
-            the href on a null reference. \n%s"""
+            """It looks like the next page element was not found, cannot set
+             the href on a null reference. \n%s"""
             % e
         )
 
     write_file(path_to_html, soup.prettify())
+
+
+def soup_from_file(file_path: Path):
+    with open(file_path, "r") as file:
+        return BeautifulSoup(file.read(), "lxml")

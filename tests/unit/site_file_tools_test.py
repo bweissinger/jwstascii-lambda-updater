@@ -1,6 +1,7 @@
 from unittest import TestCase
 from tempfile import TemporaryDirectory
 from pathlib import Path
+from bs4 import BeautifulSoup
 from jinja2.environment import Template
 from jinja2.exceptions import TemplateNotFound
 from os import makedirs
@@ -158,3 +159,18 @@ class TestUpdatePriorPage(TestCase):
             Path("file_path"),
             '<html>\n <head>\n  <link href="/styles/main.css" rel="stylesheet"/>\n </head>\n <body>\n  <li id="tomorrow_link">\n   <a href="new_file_path">\n    01|01|00\n   </a>\n  </li>\n </body>\n</html>',
         )
+
+
+@patch("builtins.open", new_callable=mock_open, read_data="")
+class TestSoupFromFile(TestCase):
+    def test_file_not_found(self, mocked_open):
+        mocked_open.side_effect = FileNotFoundError()
+        self.assertRaises(
+            FileNotFoundError, site_file_tools.soup_from_file, Path("file.path")
+        )
+
+    def test_soup_returned(self, mocked_open):
+        open().read.return_value = "<p>test</p>"
+        soup = site_file_tools.soup_from_file(Path("test.path"))
+        self.assertIsInstance(soup, BeautifulSoup)
+        self.assertEqual(str(soup), "<html><body><p>test</p></body></html>")
