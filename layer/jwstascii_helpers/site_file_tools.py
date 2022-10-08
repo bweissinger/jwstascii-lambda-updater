@@ -107,7 +107,6 @@ def soup_from_file(file_path: Path) -> BeautifulSoup:
         BeautifulSoup: BeautifulSoup object of the parsed file.
     """
     with open(file_path, "r") as file:
-        print(file.read())
         return BeautifulSoup(file.read(), "lxml")
 
 
