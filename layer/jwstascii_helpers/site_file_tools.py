@@ -108,3 +108,32 @@ def soup_from_file(file_path: Path) -> BeautifulSoup:
     """
     with open(file_path, "r") as file:
         return BeautifulSoup(file.read(), "lxml")
+
+
+def add_link_to_archive_list(
+    index_path: Path, page_path: Path, page_date: date, image_title: str
+) -> None:
+    """
+    Create a new link in the full archive list. The new link will be first on
+    the page.
+
+    Args:
+        index_path (Path): Path to the full archive index file.
+        page_path (Path): Path of the page to be linked in the archive list.
+        page_date (date): Date for the page.
+        image_title (str): Title used for the page image.
+    """
+    soup = soup_from_file(index_path)
+
+    list_item = """<li><span>%s</span><a href="%s">%s</a></li>""" % (
+        page_date.strftime("%d %B %Y"),
+        page_path,
+        image_title,
+    )
+
+    ordered_list = soup.find("ol", {"class": "archive_list"})
+
+    # findChild will return the first list element
+    ordered_list.findChild().insert_before(BeautifulSoup(list_item, "html.parser"))
+
+    write_file(index_path, soup.prettify())

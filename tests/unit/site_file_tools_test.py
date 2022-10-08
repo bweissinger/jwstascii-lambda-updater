@@ -6,7 +6,7 @@ from jinja2.environment import Template
 from jinja2.exceptions import TemplateNotFound
 from os import makedirs
 from freezegun import freeze_time
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, Mock
 from datetime import date
 
 from jwstascii_helpers import site_file_tools
@@ -174,3 +174,38 @@ class TestSoupFromFile(TestCase):
         soup = site_file_tools.soup_from_file(Path("test.path"))
         self.assertIsInstance(soup, BeautifulSoup)
         self.assertEqual(str(soup), "<html><body><p>test</p></body></html>")
+
+
+class TestAddLinkToArchiveList(TestCase):
+    def setUp(self) -> None:
+        site_file_tools.soup_from_file = Mock()
+        site_file_tools.write_file = Mock()
+        html = """<html><body>
+                <ol class="archive_list">
+                <li><span>26 September 2022</span><a href="link 1">Second title</a></li>
+                <li><span>25 September 2022</span><a href="link 2">Third image</a></li>
+                </body></html>"""
+
+        site_file_tools.soup_from_file.return_value = BeautifulSoup(html, "lxml")
+        return super().setUp()
+
+    def test_link_added(self):
+        html = """<html><body>
+                <ol class="archive_list">
+                <li><span>02 October 2022</span><a href="path/to/page.html">McTitle</a></li>
+                <li><span>26 September 2022</span><a href="link 1">Second title</a></li>
+                <li><span>25 September 2022</span><a href="link 2">Third image</a></li>
+                </body></html>"""
+
+        site_file_tools.add_link_to_archive_list(
+            "path/to/index.html", "path/to/page.html", date(2022, 10, 2), "McTitle"
+        )
+        site_file_tools.write_file.assert_called_once_with(
+            "path/to/index.html", BeautifulSoup(html, "lxml").prettify()
+        )
+
+    def test_soup_from_file_call(self):
+        site_file_tools.add_link_to_archive_list(
+            "path/to/index.html", "path/to/page.html", date(2022, 10, 2), "McTitle"
+        )
+        site_file_tools.soup_from_file.assert_called_once_with("path/to/index.html")
