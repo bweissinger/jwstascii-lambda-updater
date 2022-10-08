@@ -216,3 +216,93 @@ class TestAddLinkToArchiveList(TestCase):
             "path/to/index.html", "path/to/page.html", date(2022, 10, 2), "McTitle"
         )
         site_file_tools.soup_from_file.assert_called_once_with("path/to/index.html")
+
+
+@patch("jwstascii_helpers.site_file_tools.write_file")
+@patch("jwstascii_helpers.site_file_tools.soup_from_file")
+@patch("jwstascii_helpers.site_file_tools.generate_from_template")
+class TestAddNewMonthToArchive(TestCase):
+    def setUp(self) -> None:
+        self.html = """<div>
+            <h1>Archive</h1>
+            <h1 id="daily-list-link"><a href="./daily_list">View Daily List</a></h1>
+            <h2>2022</h2>
+            <div class="grid-container">
+                <div class="grid-item">
+                    <a href="./2022/september">September</a>
+                </div>
+            </div>
+        </div>"""
+        self.path_to_template = Path("path/to/template")
+        self.path_to_new_month_index = Path("path/to/new/month/index")
+        self.path_to_archive_overview = Path("path/to/archive/overview")
+        return super().setUp()
+
+    def add_new_month_call_wrapper(self, year, month):
+        site_file_tools.add_new_month_to_archive(
+            self.path_to_template,
+            self.path_to_new_month_index,
+            self.path_to_archive_overview,
+            year,
+            month,
+        )
+
+    def test_template_generation_call(
+        self, generate_from_template, soup_from_file, write_file
+    ):
+        soup_from_file.return_value = BeautifulSoup(self.html, "lxml")
+        self.add_new_month_call_wrapper("2022", "December")
+        template_args = {
+            "main_archive_html_path": self.path_to_archive_overview,
+            "month_and_year": "December 2022",
+        }
+        generate_from_template.assert_called_once_with(
+            self.path_to_template, self.path_to_new_month_index, template_args
+        )
+
+    def test_month_in_new_year(
+        self, generate_from_template, soup_from_file, write_file
+    ):
+        soup_from_file.return_value = BeautifulSoup(self.html, "lxml")
+        output_html = """<div>
+            <h1>Archive</h1>
+            <h1 id="daily-list-link"><a href="./daily_list">View Daily List</a></h1>
+            <h2>2023</h2>
+            <div class="grid-container">
+                <div class="grid-item">
+                    <a href="path/to/new/month/index">October</a>
+                </div>
+            </div>
+            <h2>2022</h2>
+            <div class="grid-container">
+                <div class="grid-item">
+                    <a href="./2022/september">September</a>
+                </div>
+            </div>
+        </div>"""
+        self.add_new_month_call_wrapper("2023", "October")
+        write_file.assert_any_call(
+            self.path_to_archive_overview, BeautifulSoup(output_html, "lxml").prettify()
+        )
+
+    def test_month_in_existing_year(
+        self, generate_from_template, soup_from_file, write_file
+    ):
+        soup_from_file.return_value = BeautifulSoup(self.html, "lxml")
+        output_html = """<div>
+            <h1>Archive</h1>
+            <h1 id="daily-list-link"><a href="./daily_list">View Daily List</a></h1>
+            <h2>2022</h2>
+            <div class="grid-container">
+                <div class="grid-item">
+                    <a href="path/to/new/month/index">December</a>
+                </div>
+                <div class="grid-item">
+                    <a href="./2022/september">September</a>
+                </div>
+            </div>
+        </div>"""
+        self.add_new_month_call_wrapper("2022", "December")
+        write_file.assert_called_with(
+            self.path_to_archive_overview, BeautifulSoup(output_html, "lxml").prettify()
+        )

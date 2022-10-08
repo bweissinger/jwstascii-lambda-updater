@@ -138,3 +138,54 @@ def add_link_to_archive_list(
     ordered_list.findChild().insert_before(BeautifulSoup(list_item, "html.parser"))
 
     write_file(index_path, soup.prettify())
+
+
+def add_new_month_to_archive(
+    template_path: Path,
+    new_month_path: Path,
+    archive_overview_path: Path,
+    year: str,
+    month: str,
+) -> None:
+    """
+    Adds a new month to the archive overview and generates corresponding index page.
+
+    Args:
+        template_path (Path): The path to the template file.
+        new_month_path (Path): The path where the new month index file should be saved.
+        archive_overview_path (Path): The path to the archive overview page.
+        year (str): Year of new month, 4 digit. Used for headers in the html.
+        month (str): Full month name (i.e. October). Used for headers in the html.
+    """
+    generate_from_template(
+        template_path,
+        new_month_path,
+        {
+            "main_archive_html_path": archive_overview_path,
+            "month_and_year": "%s %s" % (month.capitalize(), year),
+        },
+    )
+
+    archive_overview_soup = soup_from_file(archive_overview_path)
+    year_header = archive_overview_soup.find("h2", string=year)
+    new_section_html = """
+                <div class='grid-item'>
+                    <a href='%s'>%s</a>
+                </div>""" % (
+        new_month_path,
+        month.capitalize(),
+    )
+
+    try:
+        year_header.find_next("div", {"class": "grid-item"}).insert_before(
+            BeautifulSoup(new_section_html, "html.parser")
+        )
+    except AttributeError:
+        daily_list_link = archive_overview_soup.find("h1", {"id": "daily-list-link"})
+        new_section_html = """<h2>%s</h2><div class='grid-container'>%s</div>""" % (
+            year,
+            new_section_html,
+        )
+        daily_list_link.insert_after(BeautifulSoup(new_section_html, "html.parser"))
+
+    write_file(archive_overview_path, archive_overview_soup.prettify())
