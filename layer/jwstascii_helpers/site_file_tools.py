@@ -86,7 +86,7 @@ def update_prior_page(
 
     try:
         stylesheet_tag["href"] = "/styles/main.css"
-    except AttributeError as e:
+    except TypeError as e:
         raise RuntimeError(
             """It looks like the next page element was not found, cannot set
              the href on a null reference. \n%s"""
@@ -107,6 +107,7 @@ def soup_from_file(file_path: Path) -> BeautifulSoup:
         BeautifulSoup: BeautifulSoup object of the parsed file.
     """
     with open(file_path, "r") as file:
+        print(file.read())
         return BeautifulSoup(file.read(), "lxml")
 
 

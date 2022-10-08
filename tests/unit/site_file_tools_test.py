@@ -121,12 +121,27 @@ class TestWriteFile(TestCase):
 
 @freeze_time("2000-01-01")
 @patch("jwstascii_helpers.site_file_tools.write_file")
-@patch("builtins.open", new_callable=mock_open, read_data="")
+@patch("jwstascii_helpers.site_file_tools.soup_from_file")
 class TestUpdatePriorPage(TestCase):
-    link_html = '<li id="tomorrow_link"><a href="a">b</a></li>'
-    stylesheet_html = '<link href="/styles/main.css" rel="stylesheet"/>'
+    def setUp(self) -> None:
+        self.link_html = '<li id="tomorrow_link"><a href="a">b</a></li>'
+        self.stylesheet_html = '<link href="/styles/main.css" rel="stylesheet"/>'
+        return super().setUp()
 
-    def test_link_not_found(self, mocked_open, write_file):
+    def test_correct_file_open(self, soup_from_file, write_file):
+        soup_from_file.return_value = BeautifulSoup(
+            self.stylesheet_html + self.link_html, "lxml"
+        )
+        file_path = Path("test/file/path.html")
+        site_file_tools.update_prior_page(
+            file_path,
+            Path("outpath.html"),
+            date.today(),
+        )
+        soup_from_file.assert_called_once_with(file_path)
+
+    def test_link_not_found(self, soup_from_file, write_file):
+        soup_from_file.return_value = BeautifulSoup(self.stylesheet_html, "lxml")
         self.assertRaises(
             RuntimeError,
             site_file_tools.update_prior_page,
@@ -135,7 +150,8 @@ class TestUpdatePriorPage(TestCase):
             date.today(),
         )
 
-    def test_stylesheet_not_found(self, mocked_open, write_file):
+    def test_stylesheet_not_found(self, soup_from_file, write_file):
+        soup_from_file.return_value = BeautifulSoup(self.link_html, "lxml")
         self.assertRaises(
             RuntimeError,
             site_file_tools.update_prior_page,
@@ -144,14 +160,10 @@ class TestUpdatePriorPage(TestCase):
             date.today(),
         )
 
-    @patch("jwstascii_helpers.site_file_tools.BeautifulSoup")
-    def test_prettify_called(self, bs, mocked_open, write_file):
-        open().read.return_value = self.stylesheet_html + self.link_html
-        site_file_tools.update_prior_page(Path("file_path"), Path(""), date.today())
-        bs().prettify.assert_called_once()
-
-    def test_properly_updated(self, mocked_open, write_file):
-        open().read.return_value = self.stylesheet_html + self.link_html
+    def test_properly_updated(self, soup_from_file, write_file):
+        soup_from_file.return_value = BeautifulSoup(
+            self.stylesheet_html + self.link_html, "lxml"
+        )
         site_file_tools.update_prior_page(
             Path("file_path"), Path("new_file_path"), date.today()
         )
