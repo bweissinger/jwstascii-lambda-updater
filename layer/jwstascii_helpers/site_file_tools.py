@@ -96,7 +96,7 @@ def update_prior_page(
     write_file(path_to_html, soup.prettify())
 
 
-def soup_from_file(file_path: Path):
+def soup_from_file(file_path: Path) -> BeautifulSoup:
     """
     Get a BeautifulSoup object of the selected file.
 
