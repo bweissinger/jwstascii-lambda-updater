@@ -97,5 +97,14 @@ def update_prior_page(
 
 
 def soup_from_file(file_path: Path):
+    """
+    Get a BeautifulSoup object of the selected file.
+
+    Args:
+        file_path (Path): Path of the file to parse.
+
+    Returns:
+        BeautifulSoup: BeautifulSoup object of the parsed file.
+    """
     with open(file_path, "r") as file:
         return BeautifulSoup(file.read(), "lxml")
