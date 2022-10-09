@@ -238,8 +238,8 @@ class TestAddNewMonthToArchive(TestCase):
         self.path_to_archive_overview = Path("path/to/archive/overview")
         return super().setUp()
 
-    def add_new_month_call_wrapper(self, year, month):
-        site_file_tools.add_new_month_to_archive(
+    def add_month_call_wrapper(self, year, month):
+        site_file_tools.add_month_to_archive(
             self.path_to_template,
             self.path_to_new_month_index,
             self.path_to_archive_overview,
@@ -251,7 +251,7 @@ class TestAddNewMonthToArchive(TestCase):
         self, generate_from_template, soup_from_file, write_file
     ):
         soup_from_file.return_value = BeautifulSoup(self.html, "lxml")
-        self.add_new_month_call_wrapper("2022", "December")
+        self.add_month_call_wrapper("2022", "December")
         template_args = {
             "main_archive_html_path": self.path_to_archive_overview,
             "month_and_year": "December 2022",
@@ -280,7 +280,7 @@ class TestAddNewMonthToArchive(TestCase):
                 </div>
             </div>
         </div>"""
-        self.add_new_month_call_wrapper("2023", "October")
+        self.add_month_call_wrapper("2023", "October")
         write_file.assert_any_call(
             self.path_to_archive_overview, BeautifulSoup(output_html, "lxml").prettify()
         )
@@ -302,7 +302,15 @@ class TestAddNewMonthToArchive(TestCase):
                 </div>
             </div>
         </div>"""
-        self.add_new_month_call_wrapper("2022", "December")
+        self.add_month_call_wrapper("2022", "December")
         write_file.assert_called_with(
             self.path_to_archive_overview, BeautifulSoup(output_html, "lxml").prettify()
         )
+
+    def test_month_already_present(
+        self, generate_from_template, soup_from_file, write_file
+    ):
+        soup_from_file.return_value = BeautifulSoup(self.html, "lxml")
+        self.add_month_call_wrapper("2022", "September")
+        generate_from_template.assert_not_called()
+        write_file.assert_not_called()

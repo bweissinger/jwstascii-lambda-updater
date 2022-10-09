@@ -139,7 +139,7 @@ def add_link_to_archive_list(
     write_file(index_path, soup.prettify())
 
 
-def add_new_month_to_archive(
+def add_month_to_archive(
     template_path: Path,
     new_month_path: Path,
     archive_overview_path: Path,
@@ -147,7 +147,7 @@ def add_new_month_to_archive(
     month: str,
 ) -> None:
     """
-    Adds a new month to the archive overview and generates corresponding index page.
+    Adds new month entry to the archive if the month is not already present.
 
     Args:
         template_path (Path): The path to the template file.
@@ -156,14 +156,6 @@ def add_new_month_to_archive(
         year (str): Year of new month, 4 digit. Used for headers in the html.
         month (str): Full month name (i.e. October). Used for headers in the html.
     """
-    generate_from_template(
-        template_path,
-        new_month_path,
-        {
-            "main_archive_html_path": archive_overview_path,
-            "month_and_year": "%s %s" % (month.capitalize(), year),
-        },
-    )
 
     archive_overview_soup = soup_from_file(archive_overview_path)
     year_header = archive_overview_soup.find("h2", string=year)
@@ -176,9 +168,10 @@ def add_new_month_to_archive(
     )
 
     try:
-        year_header.find_next("div", {"class": "grid-item"}).insert_before(
-            BeautifulSoup(new_section_html, "html.parser")
-        )
+        current_month = year_header.find_next("div", {"class": "grid-item"})
+        if current_month.find_next("a").string.lower() == month.lower():
+            return None
+        current_month.insert_before(BeautifulSoup(new_section_html, "html.parser"))
     except AttributeError:
         daily_list_link = archive_overview_soup.find("h1", {"id": "daily-list-link"})
         new_section_html = """<h2>%s</h2><div class='grid-container'>%s</div>""" % (
@@ -186,5 +179,14 @@ def add_new_month_to_archive(
             new_section_html,
         )
         daily_list_link.insert_after(BeautifulSoup(new_section_html, "html.parser"))
+
+    generate_from_template(
+        template_path,
+        new_month_path,
+        {
+            "main_archive_html_path": archive_overview_path,
+            "month_and_year": "%s %s" % (month.capitalize(), year),
+        },
+    )
 
     write_file(archive_overview_path, archive_overview_soup.prettify())
