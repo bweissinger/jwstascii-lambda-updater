@@ -6,7 +6,7 @@ from jinja2.environment import Template
 from jinja2.exceptions import TemplateNotFound
 from os import makedirs
 from freezegun import freeze_time
-from unittest.mock import patch, mock_open, Mock
+from unittest.mock import patch, mock_open
 from datetime import date
 
 from jwstascii_helpers import site_file_tools
