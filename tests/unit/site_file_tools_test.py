@@ -314,3 +314,135 @@ class TestAddNewMonthToArchive(TestCase):
         self.add_month_call_wrapper("2022", "September")
         generate_from_template.assert_not_called()
         write_file.assert_not_called()
+
+
+@patch("jwstascii_helpers.site_file_tools.write_file")
+@patch("jwstascii_helpers.site_file_tools.soup_from_file")
+@patch("jwstascii_helpers.site_file_tools.add_link_to_archive_list")
+@patch("jwstascii_helpers.site_file_tools.add_month_to_archive")
+class TestAddLinksToArchive(TestCase):
+    def setUp(self) -> None:
+        self.template_dir = Path("template", "dir")
+        self.archive_path = Path("archive", "path")
+        self.path_to_new_page = Path("path", "to", "new", "page")
+        self.page_date = date(2022, 10, 1)
+        self.image_title = "This is a test image"
+        self.default_html = """<h1>Archive</h1>
+            <h1><a href="/archive">Return to Overview</a></h1>
+            <h2>September 2022</h2>
+            <ol class="archive_list">
+                <li>
+                    <span>26</span><a href="path 1">Image description 1</a>
+                </li>
+                <li>
+                    <span>25</span><a href="path 2">Image description 2</a>
+                </li>
+            </ol>"""
+        self.default_soup = BeautifulSoup(self.default_html, "lxml")
+        return super().setUp()
+
+    def test_add_month_to_archive_call_correct(
+        self, add_month_to_archive, add_link_to_archive, soup_from_file, write_file
+    ):
+        soup_from_file.side_effect = [FileNotFoundError(), self.default_soup]
+        site_file_tools.update_archive(
+            self.template_dir,
+            self.archive_path,
+            self.path_to_new_page,
+            self.page_date,
+            self.image_title,
+        )
+        add_month_to_archive.assert_called_with(
+            Path(self.template_dir, "archive_month.html"),
+            Path(self.archive_path, "2022", "october", "index.html"),
+            Path(self.archive_path, "index.html"),
+            "2022",
+            "october",
+        )
+
+    def test_add_link_to_archive_list_call_correct(
+        self, add_month_to_archive, add_link_to_archive, soup_from_file, write_file
+    ):
+        soup_from_file.return_value = self.default_soup
+        site_file_tools.update_archive(
+            self.template_dir,
+            self.archive_path,
+            self.path_to_new_page,
+            self.page_date,
+            self.image_title,
+        )
+        add_link_to_archive.assert_called_with(
+            Path(self.archive_path, "daily_list", "index.html"),
+            Path(self.path_to_new_page),
+            self.page_date,
+            self.image_title,
+        )
+
+    def test_modified_correctly(
+        self, add_month_to_archive, add_link_to_archive, soup_from_file, write_file
+    ):
+        self.page_date = date(2022, 9, 30)
+        soup_from_file.return_value = self.default_soup
+        site_file_tools.update_archive(
+            self.template_dir,
+            self.archive_path,
+            self.path_to_new_page,
+            self.page_date,
+            self.image_title,
+        )
+        expected = BeautifulSoup(
+            """<h1>Archive</h1>
+            <h1><a href="/archive">Return to Overview</a></h1>
+            <h2>September 2022</h2>
+            <ol class="archive_list">
+                <li>
+                    <span>30</span><a href="path/to/new/page">This is a test image</a>
+                </li>
+                <li>
+                    <span>26</span><a href="path 1">Image description 1</a>
+                </li>
+                <li>
+                    <span>25</span><a href="path 2">Image description 2</a>
+                </li>
+            </ol>""",
+            "lxml",
+        )
+        write_file.assert_called_with(
+            Path(self.archive_path, "2022", "september", "index.html"),
+            expected.prettify(),
+        )
+
+    def test_modified_correctly_new_month(
+        self, add_month_to_archive, add_link_to_archive, soup_from_file, write_file
+    ):
+        new_soup = BeautifulSoup(
+            """<h1>Archive</h1>
+            <h1><a href="/archive">Return to Overview</a></h1>
+            <h2>October 2022</h2>
+            <ol class="archive_list">
+            </ol>""",
+            "lxml",
+        )
+        soup_from_file.side_effect = [FileNotFoundError(), new_soup]
+        site_file_tools.update_archive(
+            self.template_dir,
+            self.archive_path,
+            self.path_to_new_page,
+            self.page_date,
+            self.image_title,
+        )
+        expected = BeautifulSoup(
+            """<h1>Archive</h1>
+            <h1><a href="/archive">Return to Overview</a></h1>
+            <h2>October 2022</h2>
+            <ol class="archive_list">
+                <li>
+                    <span>01</span><a href="path/to/new/page">This is a test image</a>
+                </li>
+            </ol>""",
+            "lxml",
+        )
+        write_file.assert_called_with(
+            Path(self.archive_path, "2022", "october", "index.html"),
+            expected.prettify(),
+        )

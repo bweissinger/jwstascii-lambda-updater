@@ -190,3 +190,51 @@ def add_month_to_archive(
     )
 
     write_file(archive_overview_path, archive_overview_soup.prettify())
+
+
+def update_archive(
+    template_dir: Path,
+    archive_path: Path,
+    path_to_new_page: Path,
+    page_date: date,
+    image_title: str,
+) -> None:
+    """
+    Updates the archive to include a specified page.
+
+    Args:
+        template_dir (Path): The path to the template directory.
+        archive_path (Path): The path to the archive directory.
+        path_to_new_page (Path): The path to the page to be added to the archive.
+        page_date (date): Date of page creation.
+        image_title (str): Title of the image contained in the page.
+    """
+    daily_archive_path = Path(archive_path, "daily_list", "index.html")
+    add_link_to_archive_list(
+        daily_archive_path, path_to_new_page, page_date, image_title
+    )
+    try:
+        year = page_date.strftime("%Y")
+        month = page_date.strftime("%B").lower()
+        month_file = Path(archive_path, year, month, "index.html")
+        soup = soup_from_file(month_file)
+    except FileNotFoundError:
+        template_path = Path(template_dir, "archive_month.html")
+        main_archive_path = Path(archive_path, "index.html")
+        add_month_to_archive(template_path, month_file, main_archive_path, year, month)
+        soup = soup_from_file(month_file)
+
+    ordered_list = soup.find("ol", {"class": "archive_list"})
+    html_to_insert = """<li><span>%s</span><a href=%s>%s</a></li>""" % (
+        page_date.strftime("%d"),
+        path_to_new_page,
+        image_title,
+    )
+    list_element = ordered_list.find_next("li")
+    try:
+        list_element.insert_before(BeautifulSoup(html_to_insert, "html.parser"))
+    except AttributeError:
+        html_to_insert = "<ol class='archive_list'>%s</ol>" % html_to_insert
+        ordered_list.replace_with(BeautifulSoup(html_to_insert, "html.parser"))
+
+    write_file(month_file, soup.prettify())
