@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+        <link href="/styles/current.css" rel="stylesheet"/>
+        <title>
+            Daily JWST Images as ASCII Art | {{title_date}}
+        </title>
+    </head>
+    <body>
+        <div class="nav_menu">
+            <ol>
+                <li id="tomorrow_link">
+                    {{tomorrow_date}}
+                </li>
+                <li id="today">
+                    <a href="/archive">
+                        {{today_date}}
+                    </a>
+                </li>
+                <li id="yesterday_link"><a href="{{previous_path}}">
+                        {{previous_date}}</a>
+                </li>
+            </ol>
+        </div>
+        <div id="image">
+            <img alt="{{image_title}}"
+                src="{{image_path}}"/>
+        </div>
+        <div id="caption">
+            <a
+                href="{{link_to_jwst_website}}">
+                {{image_title}}
+            </a>
+        </div>
+        <div id="credits">
+            <span>
+                {{image_credits}}
+            </span>
+        </div>
+        <div id="about_image">
+            {{image_description}}
+        </div>
+        <div id="contact">
+            <span>
+                Site Designed By
+            </span>
+            <br/>
+                <a href="mailto:bryan@jwstascii.com">
+                    Bryan Weissinger
+                </a>
+            </div>
+        </body>
+    </html>
