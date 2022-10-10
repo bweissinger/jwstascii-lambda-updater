@@ -188,7 +188,7 @@ class Scraper:
                     matched = True
                     break
             if not matched:
-                links.append("https://webbtelescope.org" + a["href"])
+                links.append("https://webbtelescope.org" + a["href"].split("?")[0])
             matched = False
 
         if not links:
