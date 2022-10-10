@@ -478,3 +478,30 @@ class TestGetLinksFromArchiveList(TestCase):
         soup_from_file.return_value = BeautifulSoup(html, "lxml")
         links = site_file_tools.get_links_from_archive_list(Path("path/to/archive"))
         self.assertEqual(links, ["jwst_url_1.com", "jwst_url_2.com", "jwst_url_3.com"])
+
+
+@patch("jwstascii_helpers.site_file_tools.soup_from_file")
+class TestGetDateOfCurrentPage(TestCase):
+    def setUp(self) -> None:
+        self.html = """<meta charset="utf-8"><meta http-equiv="refresh" content="0; URL=%s" />"""
+        return super().setUp()
+
+    def test_archive_file_opened(self, soup_from_file):
+        soup_from_file.return_value = BeautifulSoup(
+            self.html % "/2022/october/01", "lxml"
+        )
+        site_file_tools.get_date_of_current_page(Path("archive/path"))
+        soup_from_file.assert_called_with(Path("archive/path"))
+
+    def test_correct_date(self, soup_from_file):
+        soup_from_file.return_value = BeautifulSoup(
+            self.html % "/2022/october/01", "lxml"
+        )
+        return_date = site_file_tools.get_date_of_current_page(Path("archive/path"))
+        self.assertEqual(return_date, date(2022, 10, 1))
+
+    def test_mangled_date(self, soup_from_file):
+        soup_from_file.return_value = BeautifulSoup(self.html % "/2022/10/01", "lxml")
+        self.assertRaises(
+            ValueError, site_file_tools.get_date_of_current_page, Path("archive/path")
+        )

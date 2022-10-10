@@ -1,5 +1,6 @@
-from datetime import date
 import jinja2
+import re
+from datetime import datetime, date
 from pathlib import Path
 from os import makedirs
 from os.path import exists
@@ -255,3 +256,20 @@ def get_links_from_archive_list(path_to_archive_overview: Path) -> List[str]:
     soup = soup_from_file(Path(path_to_archive_overview, "daily_list", "index.html"))
     list_items = soup.find_all("li")
     return [list_item.find("a")["data-jwst_url"] for list_item in list_items]
+
+
+def get_date_of_current_page(path_to_main_index: Path) -> date:
+    """
+    Get the date of the current home page.
+
+    Args:
+        path_to_main_index (Path): Path of the main intex file.
+
+    Returns:
+        date: A datetime.date object containing the date of the current home page.
+    """
+    soup = soup_from_file(path_to_main_index)
+    date_contents = soup.find("meta", {"content": re.compile("0; URL=*")})[
+        "content"
+    ].split("/")[-3:]
+    return datetime.strptime("".join(date_contents), "%Y%B%d").date()
