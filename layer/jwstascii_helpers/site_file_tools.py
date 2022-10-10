@@ -3,7 +3,7 @@ import jinja2
 from pathlib import Path
 from os import makedirs
 from os.path import exists
-from typing import Dict
+from typing import Dict, List
 from bs4 import BeautifulSoup
 
 
@@ -111,7 +111,7 @@ def soup_from_file(file_path: Path) -> BeautifulSoup:
 
 
 def add_link_to_archive_list(
-    index_path: Path, page_path: Path, page_date: date, image_title: str
+    index_path: Path, page_path: Path, page_date: date, image_title: str, image_url: str
 ) -> None:
     """
     Create a new link in the full archive list. The new link will be first on
@@ -122,11 +122,13 @@ def add_link_to_archive_list(
         page_path (Path): Path of the page to be linked in the archive list.
         page_date (date): Date for the page.
         image_title (str): Title used for the page image.
+        image_url (str): The url of the image page on the jwst website.
     """
     soup = soup_from_file(index_path)
 
-    list_item = """<li><span>%s</span><a href="%s">%s</a></li>""" % (
+    list_item = """<li><span>%s</span><a data-jwst_url="%s" href="%s">%s</a></li>""" % (
         page_date.strftime("%d %B %Y"),
+        image_url,
         page_path,
         image_title,
     )
@@ -238,3 +240,18 @@ def update_archive(
         ordered_list.replace_with(BeautifulSoup(html_to_insert, "html.parser"))
 
     write_file(month_file, soup.prettify())
+
+
+def get_links_from_archive_list(path_to_archive_overview: Path) -> List[str]:
+    """
+    Get all previously used jwst image site links.
+
+    Args:
+        path_to_archive_overview (Path): Path to the archive overview directory.
+
+    Returns:
+        List[str]: A list containing previously used urls.
+    """
+    soup = soup_from_file(Path(path_to_archive_overview, "daily_list", "index.html"))
+    list_items = soup.find_all("li")
+    return [list_item.find("a")["data-jwst_url"] for list_item in list_items]

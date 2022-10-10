@@ -194,17 +194,21 @@ class TestAddLinkToArchiveList(TestCase):
     def setUp(self) -> None:
         self.html = """<html><body>
                 <ol class="archive_list">
-                <li><span>26 September 2022</span><a href="link 1">Second title</a></li>
-                <li><span>25 September 2022</span><a href="link 2">Third image</a></li>
+                <li><span>26 September 2022</span><a data-jwst_url="url_1.com" href="link 1">Second title</a></li>
+                <li><span>25 September 2022</span><a data-jwst_url="url_2.com" href="link 2">Third image</a></li>
                 </body></html>"""
         return super().setUp()
 
     def test_link_added(self, soup_from_file, write_file):
         soup_from_file.return_value = BeautifulSoup(self.html, "lxml")
-        expected_html = """<html>\n <body>\n  <ol class="archive_list">\n   <li>\n    <span>\n     02 October 2022\n    </span>\n    <a href="path/to/page.html">\n     McTitle\n    </a>\n   </li>\n   <li>\n    <span>\n     26 September 2022\n    </span>\n    <a href="link 1">\n     Second title\n    </a>\n   </li>\n   <li>\n    <span>\n     25 September 2022\n    </span>\n    <a href="link 2">\n     Third image\n    </a>\n   </li>\n  </ol>\n </body>\n</html>"""
+        expected_html = """<html>\n <body>\n  <ol class="archive_list">\n   <li>\n    <span>\n     02 October 2022\n    </span>\n    <a data-jwst_url="some-url.com" href="path/to/page.html">\n     McTitle\n    </a>\n   </li>\n   <li>\n    <span>\n     26 September 2022\n    </span>\n    <a data-jwst_url="url_1.com" href="link 1">\n     Second title\n    </a>\n   </li>\n   <li>\n    <span>\n     25 September 2022\n    </span>\n    <a data-jwst_url="url_2.com" href="link 2">\n     Third image\n    </a>\n   </li>\n  </ol>\n </body>\n</html>"""
 
         site_file_tools.add_link_to_archive_list(
-            "path/to/index.html", "path/to/page.html", date(2022, 10, 2), "McTitle"
+            "path/to/index.html",
+            "path/to/page.html",
+            date(2022, 10, 2),
+            "McTitle",
+            "some-url.com",
         )
         site_file_tools.write_file.assert_called_once_with(
             "path/to/index.html", expected_html
@@ -213,7 +217,11 @@ class TestAddLinkToArchiveList(TestCase):
     def test_soup_from_file_call(self, soup_from_file, write_file):
         soup_from_file.return_value = BeautifulSoup(self.html, "lxml")
         site_file_tools.add_link_to_archive_list(
-            "path/to/index.html", "path/to/page.html", date(2022, 10, 2), "McTitle"
+            "path/to/index.html",
+            "path/to/page.html",
+            date(2022, 10, 2),
+            "McTitle",
+            "some-url.com",
         )
         site_file_tools.soup_from_file.assert_called_once_with("path/to/index.html")
 
@@ -446,3 +454,27 @@ class TestAddLinksToArchive(TestCase):
             Path(self.archive_path, "2022", "october", "index.html"),
             expected.prettify(),
         )
+
+
+@patch("jwstascii_helpers.site_file_tools.soup_from_file")
+class TestGetLinksFromArchiveList(TestCase):
+    def test_link_retrieval(self, soup_from_file):
+        html = """<h1>Archive List</h1>
+            <h1><a href="/archive">Return to Overview</a></h1>
+            <ol class="archive_list">
+                <li>
+                    <span>26 September 2022</span>
+                    <a data-jwst_url="jwst_url_1.com" href="Path/1">Image Title 1</a>
+                </li>
+                <li>
+                    <span>25 September 2022</span>
+                    <a data-jwst_url="jwst_url_2.com" href="Path/2">Image Title 2</a>
+                </li>
+                <li>
+                    <span>24 September 2022</span>
+                    <a data-jwst_url="jwst_url_3.com" href="Path/3">Image Title 3</a>
+                </li>
+            </ol>"""
+        soup_from_file.return_value = BeautifulSoup(html, "lxml")
+        links = site_file_tools.get_links_from_archive_list(Path("path/to/archive"))
+        self.assertEqual(links, ["jwst_url_1.com", "jwst_url_2.com", "jwst_url_3.com"])
