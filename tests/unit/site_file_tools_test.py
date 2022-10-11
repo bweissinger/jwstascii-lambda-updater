@@ -2,6 +2,7 @@ from unittest import TestCase
 from tempfile import TemporaryDirectory
 from pathlib import Path
 from bs4 import BeautifulSoup
+from jinja2 import Environment, BaseLoader
 from jinja2.environment import Template
 from jinja2.exceptions import TemplateNotFound
 from os import makedirs
@@ -18,75 +19,75 @@ RESOURCES_DIR = Path("tests/resources")
 class TestGetJinjaTemplate(TestCase):
     def test_fails_on_bad_template_path(self):
         with TemporaryDirectory() as tempdir:
-            path = Path(tempdir, "not_exists.tpl")
             self.assertRaises(
                 TemplateNotFound,
                 site_file_tools.get_jinja_template,
-                path,
+                "not_a_template",
             )
 
     def test_returns_jinja_template(self):
-        with TemporaryDirectory() as tempdir:
-            template_path = Path(tempdir, "template.tpl")
-            with open(template_path, "w") as file:
-                file.write("<p>{{var}}</p>")
-            self.assertIsInstance(
-                site_file_tools.get_jinja_template(template_path), Template
-            )
+        self.assertIsInstance(
+            site_file_tools.get_jinja_template("main_index.html"), Template
+        )
 
 
+@patch("jwstascii_helpers.site_file_tools.write_file")
+@patch("jwstascii_helpers.site_file_tools.get_jinja_template")
 class TestGenerateFromTemplate(TestCase):
-    def create_template(self, tempdir):
-        self.template_path = Path(tempdir, "template.html")
-        with open(self.template_path, "w") as file:
-            file.write("<p>my template</p><span>{{var_1}}</span><div>{{var_2}}</div>")
+    def setUp(self) -> None:
+        self.template_html = (
+            "<p>my template</p><span>{{var_1}}</span><div>{{var_2}}</div>"
+        )
+        return super().setUp()
 
-    def test_vars_unpacked_correctly(self):
-        with TemporaryDirectory() as tempdir:
-            output_path = Path(tempdir, "output.html")
-            self.create_template(tempdir)
-            site_file_tools.generate_from_template(
-                self.template_path, output_path, {"var_1": "a", "var_2": "b"}
-            )
+    def generate_template(self, template_str):
+        return Environment(loader=BaseLoader).from_string(template_str)
 
-            with open(output_path, "r") as generated:
-                expected = "<p>my template</p><span>a</span><div>b</div>"
-                self.assertEqual(generated.read(), expected)
+    def test_get_jinja_template_call_correct(self, get_jinja_template, write_file):
+        get_jinja_template.return_value = self.generate_template(self.template_html)
+        output_path = Path("directory", "output.html")
+        site_file_tools.generate_from_template(
+            "test_template", output_path, {"var_1": "a", "var_2": "b"}
+        )
+        get_jinja_template.assert_called_with("test_template")
 
-    def test_too_few_vars(self):
-        with TemporaryDirectory() as tempdir:
-            output_path = Path(tempdir, "output.html")
-            self.create_template(tempdir)
-            site_file_tools.generate_from_template(
-                self.template_path, output_path, {"var_1": "a"}
-            )
-            with open(output_path, "r") as generated:
-                expected = "<p>my template</p><span>a</span><div></div>"
-                self.assertEqual(generated.read(), expected)
+    def test_vars_unpacked_correctly(self, get_jinja_template, write_file):
+        get_jinja_template.return_value = self.generate_template(self.template_html)
+        output_path = Path("directory", "output.html")
+        site_file_tools.generate_from_template(
+            "test_template", output_path, {"var_1": "a", "var_2": "b"}
+        )
+        expected = "<p>my template</p><span>a</span><div>b</div>"
+        write_file.assert_called_once_with(output_path, expected)
 
-    def test_too_many_vars(self):
-        with TemporaryDirectory() as tempdir:
-            output_path = Path(tempdir, "output.html")
-            self.create_template(tempdir)
-            site_file_tools.generate_from_template(
-                self.template_path,
-                output_path,
-                {"var_1": "a", "var_2": "b", "var_3": "c"},
-            )
-            with open(output_path, "r") as generated:
-                expected = "<p>my template</p><span>a</span><div>b</div>"
-                self.assertEqual(generated.read(), expected)
+    def test_too_few_vars(self, get_jinja_template, write_file):
+        get_jinja_template.return_value = self.generate_template(self.template_html)
+        output_path = Path("directory", "output.html")
+        site_file_tools.generate_from_template(
+            "test_template", output_path, {"var_1": "a"}
+        )
+        expected = "<p>my template</p><span>a</span><div></div>"
+        write_file.assert_called_once_with(output_path, expected)
 
-    def test_undefined_var(self):
-        with TemporaryDirectory() as tempdir:
-            output_path = Path(tempdir, "output.html")
-            self.create_template(tempdir)
-            site_file_tools.generate_from_template(
-                self.template_path, output_path, {"var_1": "a", "var_3": "b"}
-            )
-            with open(output_path, "r") as generated:
-                expected = "<p>my template</p><span>a</span><div></div>"
-                self.assertEqual(generated.read(), expected)
+    def test_too_many_vars(self, get_jinja_template, write_file):
+        get_jinja_template.return_value = self.generate_template(self.template_html)
+        output_path = Path("directory", "output.html")
+        site_file_tools.generate_from_template(
+            "test_template",
+            output_path,
+            {"var_1": "a", "var_2": "b", "var_3": "c"},
+        )
+        expected = "<p>my template</p><span>a</span><div>b</div>"
+        write_file.assert_called_once_with(output_path, expected)
+
+    def test_undefined_var(self, get_jinja_template, write_file):
+        get_jinja_template.return_value = self.generate_template(self.template_html)
+        output_path = Path("directory", "output.html")
+        site_file_tools.generate_from_template(
+            "test_template", output_path, {"var_1": "a", "var_3": "b"}
+        )
+        expected = "<p>my template</p><span>a</span><div></div>"
+        write_file.assert_called_once_with(output_path, expected)
 
 
 class TestWriteFile(TestCase):

@@ -8,19 +8,20 @@ from typing import Dict, List
 from bs4 import BeautifulSoup
 
 
-def get_jinja_template(template_path: Path) -> jinja2.Template:
+def get_jinja_template(template_name: Path) -> jinja2.Template:
     """
     Load the requested template.
 
     Args:
-        template_path (Path): Path object for the template file.
+        template_name (str): File name of the desired template.
 
     Returns:
         jinja2.Template: The requested jinja2 template.
     """
-    template_loader = jinja2.FileSystemLoader(searchpath=template_path.parent)
-    template_env = jinja2.Environment(loader=template_loader, autoescape=True)
-    return template_env.get_template(template_path.name)
+    template_env = jinja2.Environment(
+        loader=jinja2.PackageLoader("jwstascii_helpers"), autoescape=True
+    )
+    return template_env.get_template(template_name)
 
 
 def write_file(output_path: Path, file_content: str) -> None:
@@ -39,18 +40,18 @@ def write_file(output_path: Path, file_content: str) -> None:
 
 
 def generate_from_template(
-    template_path: Path, output_path: Path, vars_dict: Dict[str, str]
+    template_name: str, output_path: Path, vars_dict: Dict[str, str]
 ) -> None:
     """
     Function for generating html from a jinja template.
 
     Args:
-        template_path (Path): Path of the desired template.
+        template_name (str): File name of the desired template.
         output_path (Path): Path of the resulting html file.
         vars_dict (Dict[str, str]): Dictionary containing template variables and their
             values to be assigned.
     """
-    template = get_jinja_template(template_path)
+    template = get_jinja_template(template_name)
     output_html = template.render(**vars_dict)
     write_file(output_path, output_html)
 
