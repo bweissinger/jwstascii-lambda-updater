@@ -12,7 +12,6 @@ from datetime import date
 
 from jwstascii_helpers import site_file_tools
 
-TEMPLATE_DIR = Path("layer/jwstascii_helpers/templates")
 RESOURCES_DIR = Path("tests/resources")
 
 
@@ -242,14 +241,12 @@ class TestAddNewMonthToArchive(TestCase):
                 </div>
             </div>
         </div>"""
-        self.path_to_template = Path("path/to/template")
         self.path_to_new_month_index = Path("path/to/new/month/index")
         self.path_to_archive_overview = Path("path/to/archive/overview")
         return super().setUp()
 
     def add_month_call_wrapper(self, year, month):
         site_file_tools.add_month_to_archive(
-            self.path_to_template,
             self.path_to_new_month_index,
             self.path_to_archive_overview,
             year,
@@ -266,7 +263,7 @@ class TestAddNewMonthToArchive(TestCase):
             "month_and_year": "December 2022",
         }
         generate_from_template.assert_called_once_with(
-            self.path_to_template, self.path_to_new_month_index, template_args
+            "archive_month.html", self.path_to_new_month_index, template_args
         )
 
     def test_month_in_new_year(
@@ -331,7 +328,6 @@ class TestAddNewMonthToArchive(TestCase):
 @patch("jwstascii_helpers.site_file_tools.add_month_to_archive")
 class TestAddLinksToArchive(TestCase):
     def setUp(self) -> None:
-        self.template_dir = Path("template", "dir")
         self.archive_path = Path("archive", "path")
         self.path_to_new_page = Path("path", "to", "new", "page")
         self.page_date = date(2022, 10, 1)
@@ -355,14 +351,12 @@ class TestAddLinksToArchive(TestCase):
     ):
         soup_from_file.side_effect = [FileNotFoundError(), self.default_soup]
         site_file_tools.update_archive(
-            self.template_dir,
             self.archive_path,
             self.path_to_new_page,
             self.page_date,
             self.image_title,
         )
         add_month_to_archive.assert_called_with(
-            Path(self.template_dir, "archive_month.html"),
             Path(self.archive_path, "2022", "october", "index.html"),
             Path(self.archive_path, "index.html"),
             "2022",
@@ -374,7 +368,6 @@ class TestAddLinksToArchive(TestCase):
     ):
         soup_from_file.return_value = self.default_soup
         site_file_tools.update_archive(
-            self.template_dir,
             self.archive_path,
             self.path_to_new_page,
             self.page_date,
@@ -393,7 +386,6 @@ class TestAddLinksToArchive(TestCase):
         self.page_date = date(2022, 9, 30)
         soup_from_file.return_value = self.default_soup
         site_file_tools.update_archive(
-            self.template_dir,
             self.archive_path,
             self.path_to_new_page,
             self.page_date,
@@ -434,7 +426,6 @@ class TestAddLinksToArchive(TestCase):
         )
         soup_from_file.side_effect = [FileNotFoundError(), new_soup]
         site_file_tools.update_archive(
-            self.template_dir,
             self.archive_path,
             self.path_to_new_page,
             self.page_date,

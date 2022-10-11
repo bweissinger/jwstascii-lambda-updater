@@ -144,7 +144,6 @@ def add_link_to_archive_list(
 
 
 def add_month_to_archive(
-    template_path: Path,
     new_month_path: Path,
     archive_overview_path: Path,
     year: str,
@@ -154,7 +153,6 @@ def add_month_to_archive(
     Adds new month entry to the archive if the month is not already present.
 
     Args:
-        template_path (Path): The path to the template file.
         new_month_path (Path): The path where the new month index file should be saved.
         archive_overview_path (Path): The path to the archive overview page.
         year (str): Year of new month, 4 digit. Used for headers in the html.
@@ -185,7 +183,7 @@ def add_month_to_archive(
         daily_list_link.insert_after(BeautifulSoup(new_section_html, "html.parser"))
 
     generate_from_template(
-        template_path,
+        "archive_month.html",
         new_month_path,
         {
             "main_archive_html_path": archive_overview_path,
@@ -197,7 +195,6 @@ def add_month_to_archive(
 
 
 def update_archive(
-    template_dir: Path,
     archive_path: Path,
     path_to_new_page: Path,
     page_date: date,
@@ -207,7 +204,6 @@ def update_archive(
     Updates the archive to include a specified page.
 
     Args:
-        template_dir (Path): The path to the template directory.
         archive_path (Path): The path to the archive directory.
         path_to_new_page (Path): The path to the page to be added to the archive.
         page_date (date): Date of page creation.
@@ -223,9 +219,8 @@ def update_archive(
         month_file = Path(archive_path, year, month, "index.html")
         soup = soup_from_file(month_file)
     except FileNotFoundError:
-        template_path = Path(template_dir, "archive_month.html")
         main_archive_path = Path(archive_path, "index.html")
-        add_month_to_archive(template_path, month_file, main_archive_path, year, month)
+        add_month_to_archive(month_file, main_archive_path, year, month)
         soup = soup_from_file(month_file)
 
     ordered_list = soup.find("ol", {"class": "archive_list"})
