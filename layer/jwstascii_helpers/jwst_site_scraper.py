@@ -58,7 +58,9 @@ class Scraper:
         if not footer:
             raise ValueError("Could not find footer in html: \n%s" % html)
 
-        credits = footer.find("p", string=re.compile("IMAGE:*", re.I))
+        credits = footer.find("strong", string=re.compile("Credits*", re.I)).find_next(
+            "p"
+        )
 
         if not credits:
             raise ValueError(
@@ -66,10 +68,13 @@ class Scraper:
             )
 
         credits_list = []
-        for credit in credits.text.split(":")[1].split(","):
-            credit = credit.replace(" ", "")
-            if credit:
-                credits_list.append(credit)
+        try:
+            for credit in credits.text.split(":")[1].split(","):
+                credit = credit.replace(" ", "")
+                if credit:
+                    credits_list.append(credit)
+        except IndexError:
+            raise RuntimeError("Unable to parse credits paragraph: %s" % str(credits))
 
         if not credits_list:
             raise ValueError("No credits parsed from html: \n%s" % html)

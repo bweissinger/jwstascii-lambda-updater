@@ -51,7 +51,7 @@ class TestGetImageCredits(TestCase):
         html = (
             """<footer><strong>Credits:</strong><p>NASA, ESA, CSA, STScI</p></footer>"""
         )
-        self.assertRaises(ValueError, self.scraper.get_image_credits, html)
+        self.assertRaises(RuntimeError, self.scraper.get_image_credits, html)
 
     def test_blank_credits(self):
         html = """<footer><strong>Credits:</strong><p>IMAGE: </p></footer>"""
