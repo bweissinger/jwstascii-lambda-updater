@@ -35,12 +35,10 @@
             </a>
         </div>
         <div id="credits">
-            <span>
-                {{image_credits}}
-            </span>
+            {{image_credits|safe}}
         </div>
         <div id="about_image">
-            {{image_description}}
+            {{image_description|safe}}
         </div>
         <div id="contact">
             <span>

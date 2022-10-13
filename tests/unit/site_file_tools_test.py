@@ -17,7 +17,7 @@ RESOURCES_DIR = Path("tests/resources")
 
 class TestGetJinjaTemplate(TestCase):
     def test_fails_on_bad_template_path(self):
-        with TemporaryDirectory() as tempdir:
+        with TemporaryDirectory():
             self.assertRaises(
                 TemplateNotFound,
                 site_file_tools.get_jinja_template,
@@ -34,9 +34,7 @@ class TestGetJinjaTemplate(TestCase):
 @patch("jwstascii_helpers.site_file_tools.get_jinja_template")
 class TestGenerateFromTemplate(TestCase):
     def setUp(self) -> None:
-        self.template_html = (
-            "<p>my template</p><span>{{var_1}}</span><div>{{var_2}}</div>"
-        )
+        self.template_html = "<html><body><p>my template</p><span>{{var_1}}</span><div>{{var_2}}</div></html></body>"
         return super().setUp()
 
     def generate_template(self, template_str):
@@ -56,7 +54,7 @@ class TestGenerateFromTemplate(TestCase):
         site_file_tools.generate_from_template(
             "test_template", output_path, {"var_1": "a", "var_2": "b"}
         )
-        expected = "<p>my template</p><span>a</span><div>b</div>"
+        expected = "<html>\n <body>\n  <p>\n   my template\n  </p>\n  <span>\n   a\n  </span>\n  <div>\n   b\n  </div>\n </body>\n</html>"
         write_file.assert_called_once_with(output_path, expected)
 
     def test_too_few_vars(self, get_jinja_template, write_file):
@@ -65,7 +63,7 @@ class TestGenerateFromTemplate(TestCase):
         site_file_tools.generate_from_template(
             "test_template", output_path, {"var_1": "a"}
         )
-        expected = "<p>my template</p><span>a</span><div></div>"
+        expected = "<html>\n <body>\n  <p>\n   my template\n  </p>\n  <span>\n   a\n  </span>\n  <div>\n  </div>\n </body>\n</html>"
         write_file.assert_called_once_with(output_path, expected)
 
     def test_too_many_vars(self, get_jinja_template, write_file):
@@ -76,7 +74,7 @@ class TestGenerateFromTemplate(TestCase):
             output_path,
             {"var_1": "a", "var_2": "b", "var_3": "c"},
         )
-        expected = "<p>my template</p><span>a</span><div>b</div>"
+        expected = "<html>\n <body>\n  <p>\n   my template\n  </p>\n  <span>\n   a\n  </span>\n  <div>\n   b\n  </div>\n </body>\n</html>"
         write_file.assert_called_once_with(output_path, expected)
 
     def test_undefined_var(self, get_jinja_template, write_file):
@@ -85,7 +83,7 @@ class TestGenerateFromTemplate(TestCase):
         site_file_tools.generate_from_template(
             "test_template", output_path, {"var_1": "a", "var_3": "b"}
         )
-        expected = "<p>my template</p><span>a</span><div></div>"
+        expected = "<html>\n <body>\n  <p>\n   my template\n  </p>\n  <span>\n   a\n  </span>\n  <div>\n  </div>\n </body>\n</html>"
         write_file.assert_called_once_with(output_path, expected)
 
 
@@ -259,7 +257,7 @@ class TestAddNewMonthToArchive(TestCase):
         soup_from_file.return_value = BeautifulSoup(self.html, "lxml")
         self.add_month_call_wrapper("2022", "December")
         template_args = {
-            "main_archive_html_path": self.path_to_archive_overview,
+            "main_archive_html_path": "/archive",
             "month_and_year": "December 2022",
         }
         generate_from_template.assert_called_once_with(
@@ -276,7 +274,7 @@ class TestAddNewMonthToArchive(TestCase):
             <h2>2023</h2>
             <div class="grid-container">
                 <div class="grid-item">
-                    <a href="path/to/new/month/index">October</a>
+                    <a href="./2023/october">October</a>
                 </div>
             </div>
             <h2>2022</h2>
@@ -286,7 +284,7 @@ class TestAddNewMonthToArchive(TestCase):
                 </div>
             </div>
         </div>"""
-        self.add_month_call_wrapper("2023", "October")
+        self.add_month_call_wrapper("2023", "october")
         write_file.assert_any_call(
             self.path_to_archive_overview, BeautifulSoup(output_html, "lxml").prettify()
         )
@@ -301,14 +299,14 @@ class TestAddNewMonthToArchive(TestCase):
             <h2>2022</h2>
             <div class="grid-container">
                 <div class="grid-item">
-                    <a href="path/to/new/month/index">December</a>
+                    <a href="./2022/december">December</a>
                 </div>
                 <div class="grid-item">
                     <a href="./2022/september">September</a>
                 </div>
             </div>
         </div>"""
-        self.add_month_call_wrapper("2022", "December")
+        self.add_month_call_wrapper("2022", "december")
         write_file.assert_called_with(
             self.path_to_archive_overview, BeautifulSoup(output_html, "lxml").prettify()
         )

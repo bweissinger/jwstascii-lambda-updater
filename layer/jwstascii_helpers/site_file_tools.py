@@ -53,7 +53,8 @@ def generate_from_template(
     """
     template = get_jinja_template(template_name)
     output_html = template.render(**vars_dict)
-    write_file(output_path, output_html)
+    soup = BeautifulSoup(output_html, "lxml")
+    write_file(output_path, soup.prettify())
 
 
 def update_prior_page(
@@ -163,9 +164,10 @@ def add_month_to_archive(
     year_header = archive_overview_soup.find("h2", string=year)
     new_section_html = """
                 <div class='grid-item'>
-                    <a href='%s'>%s</a>
+                    <a href='./%s/%s'>%s</a>
                 </div>""" % (
-        new_month_path,
+        year,
+        month,
         month.capitalize(),
     )
 
@@ -186,7 +188,7 @@ def add_month_to_archive(
         "archive_month.html",
         new_month_path,
         {
-            "main_archive_html_path": archive_overview_path,
+            "main_archive_html_path": "/archive",
             "month_and_year": "%s %s" % (month.capitalize(), year),
         },
     )

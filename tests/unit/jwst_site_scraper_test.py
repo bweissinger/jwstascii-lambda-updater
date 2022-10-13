@@ -1,5 +1,6 @@
 import responses
 from unittest import TestCase
+from requests.exceptions import RetryError
 from jwstascii_helpers.jwst_site_scraper import Scraper
 from tempfile import TemporaryDirectory
 from os import path
@@ -51,32 +52,43 @@ class TestGetImageCredits(TestCase):
         html = (
             """<footer><strong>Credits:</strong><p>NASA, ESA, CSA, STScI</p></footer>"""
         )
-        self.assertRaises(RuntimeError, self.scraper.get_image_credits, html)
+        self.assertEqual(
+            self.scraper.get_image_credits(html),
+            "<p>\n NASA, ESA, CSA, STScI\n</p>",
+        )
 
     def test_blank_credits(self):
         html = """<footer><strong>Credits:</strong><p>IMAGE: </p></footer>"""
-        self.assertRaises(ValueError, self.scraper.get_image_credits, html)
+        self.assertEqual(
+            self.scraper.get_image_credits(html),
+            "<p>\n IMAGE:\n</p>",
+        )
 
     def test_valid_credits(self):
         html = """<footer><strong>Credits:</strong><p>IMAGE: NASA, ESA, CSA, STScI</p></footer>"""
         self.assertEqual(
-            self.scraper.get_image_credits(html), ["NASA", "ESA", "CSA", "STScI"]
+            self.scraper.get_image_credits(html),
+            "<p>\n IMAGE: NASA, ESA, CSA, STScI\n</p>",
         )
 
     def test_lowercase_image_prefix(self):
         html = """<footer><strong>Credits:</strong><p>image: NASA, ESA, CSA, STScI</p></footer>"""
         self.assertEqual(
-            self.scraper.get_image_credits(html), ["NASA", "ESA", "CSA", "STScI"]
+            self.scraper.get_image_credits(html),
+            "<p>\n image: NASA, ESA, CSA, STScI\n</p>",
         )
 
     def test_single_credit(self):
         html = """<footer><strong>Credits:</strong><p>image: NASA</p></footer>"""
-        self.assertEqual(self.scraper.get_image_credits(html), ["NASA"])
+        self.assertEqual(
+            self.scraper.get_image_credits(html), "<p>\n image: NASA\n</p>"
+        )
 
     def test_only_parses_credit_in_footer(self):
         html = """<p>image: NOT, CORRECT, CREDITS</p><footer><strong>Credits:</strong><p>image: NASA, ESA, CSA, STScI</p></footer>"""
         self.assertEqual(
-            self.scraper.get_image_credits(html), ["NASA", "ESA", "CSA", "STScI"]
+            self.scraper.get_image_credits(html),
+            "<p>\n image: NASA, ESA, CSA, STScI\n</p>",
         )
 
 
@@ -277,7 +289,7 @@ class TestGetUrlWithRetries(TestCase):
             )
             self.scraper = Scraper()
             self.assertRaises(
-                MaxRetryError, self.scraper.get_url_with_retries, self.url, {}, 5
+                RetryError, self.scraper.get_url_with_retries, self.url, {}, 5
             )
 
     @responses.activate

@@ -38,7 +38,7 @@ class Scraper:
         strainer = SoupStrainer(["a", "p"])
         return str(BeautifulSoup(image_description, "lxml", parse_only=strainer))
 
-    def get_image_credits(self, html: str) -> List[str]:
+    def get_image_credits(self, html: str) -> str:
         """
         Parses image credits from the footer of a jwst website image page.
 
@@ -50,7 +50,7 @@ class Scraper:
                 is found, or if the resulting credits list is blank.
 
         Returns:
-            List[str]: A list of the image credits parsed from the page.
+            str: Credits paragraph from the image page.
         """
         soup = BeautifulSoup(html, "lxml")
         footer = soup.find("footer")
@@ -67,19 +67,7 @@ class Scraper:
                 "Could not find credits image prefix in footer: \n%s" % html
             )
 
-        credits_list = []
-        try:
-            for credit in credits.text.split(":")[1].split(","):
-                credit = credit.replace(" ", "")
-                if credit:
-                    credits_list.append(credit)
-        except IndexError:
-            raise RuntimeError("Unable to parse credits paragraph: %s" % str(credits))
-
-        if not credits_list:
-            raise ValueError("No credits parsed from html: \n%s" % html)
-
-        return credits_list
+        return credits.prettify()
 
     def get_image_download_url(self, html: str) -> str:
         """
