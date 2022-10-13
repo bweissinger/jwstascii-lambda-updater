@@ -343,6 +343,7 @@ class TestAddLinksToArchive(TestCase):
                     <span>25</span><a href="path 2">Image description 2</a>
                 </li>
             </ol>"""
+        self.url = "page_url"
         self.default_soup = BeautifulSoup(self.default_html, "lxml")
         return super().setUp()
 
@@ -355,6 +356,7 @@ class TestAddLinksToArchive(TestCase):
             self.path_to_new_page,
             self.page_date,
             self.image_title,
+            self.url,
         )
         add_month_to_archive.assert_called_with(
             Path(self.archive_path, "2022", "october", "index.html"),
@@ -372,12 +374,14 @@ class TestAddLinksToArchive(TestCase):
             self.path_to_new_page,
             self.page_date,
             self.image_title,
+            self.url,
         )
         add_link_to_archive.assert_called_with(
             Path(self.archive_path, "daily_list", "index.html"),
             Path(self.path_to_new_page),
             self.page_date,
             self.image_title,
+            self.url,
         )
 
     def test_modified_correctly(
@@ -390,6 +394,7 @@ class TestAddLinksToArchive(TestCase):
             self.path_to_new_page,
             self.page_date,
             self.image_title,
+            self.url,
         )
         expected = BeautifulSoup(
             """<h1>Archive</h1>
@@ -430,6 +435,7 @@ class TestAddLinksToArchive(TestCase):
             self.path_to_new_page,
             self.page_date,
             self.image_title,
+            self.url,
         )
         expected = BeautifulSoup(
             """<h1>Archive</h1>

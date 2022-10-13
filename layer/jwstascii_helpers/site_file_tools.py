@@ -199,6 +199,7 @@ def update_archive(
     path_to_new_page: Path,
     page_date: date,
     image_title: str,
+    image_url: str,
 ) -> None:
     """
     Updates the archive to include a specified page.
@@ -211,7 +212,7 @@ def update_archive(
     """
     daily_archive_path = Path(archive_path, "daily_list", "index.html")
     add_link_to_archive_list(
-        daily_archive_path, path_to_new_page, page_date, image_title
+        daily_archive_path, path_to_new_page, page_date, image_title, image_url
     )
     try:
         year = page_date.strftime("%Y")
