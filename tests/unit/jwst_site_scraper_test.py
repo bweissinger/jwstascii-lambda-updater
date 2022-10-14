@@ -191,7 +191,7 @@ class TestGetImageTitle(TestCase):
         self.assertRaises(ValueError, self.scraper.get_image_title, html)
 
     def test_meta_title_property_retrieved(self):
-        html = '<meta property="og:title" content="Super Bangin Title"><title>Some title</title>'
+        html = """<meta property="og:title" content="Super Bangin Title&amp;nbsp;">"""
         self.assertEqual(self.scraper.get_image_title(html), "Super Bangin Title")
 
 
