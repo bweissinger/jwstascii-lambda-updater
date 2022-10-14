@@ -53,7 +53,7 @@ def generate_from_template(
     """
     template = get_jinja_template(template_name)
     output_html = template.render(**vars_dict)
-    soup = BeautifulSoup(output_html, "lxml")
+    soup = BeautifulSoup(output_html, "html.parser")
     write_file(output_path, soup.prettify())
 
 
@@ -110,7 +110,7 @@ def soup_from_file(file_path: Path) -> BeautifulSoup:
         BeautifulSoup: BeautifulSoup object of the parsed file.
     """
     with open(file_path, "r") as file:
-        return BeautifulSoup(file.read(), "lxml")
+        return BeautifulSoup(file.read(), "html.parser")
 
 
 def add_link_to_archive_list(

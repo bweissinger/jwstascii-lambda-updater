@@ -183,7 +183,7 @@ class TestSoupFromFile(TestCase):
         open().read.return_value = "<p>test</p>"
         soup = site_file_tools.soup_from_file(Path("test.path"))
         self.assertIsInstance(soup, BeautifulSoup)
-        self.assertEqual(str(soup), "<html><body><p>test</p></body></html>")
+        self.assertEqual(str(soup), "<p>test</p>")
 
 
 @patch("jwstascii_helpers.site_file_tools.write_file")
