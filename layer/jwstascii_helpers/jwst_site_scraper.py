@@ -20,7 +20,7 @@ class Scraper:
             ValueError: Raised if image description cannot be found.
         """
 
-        soup = BeautifulSoup(html, "lxml")
+        soup = BeautifulSoup(html, "html.parser")
         header = soup.find("h4", string=re.compile("about", re.I))
 
         if not header or not soup.find("footer"):
@@ -36,7 +36,7 @@ class Scraper:
             image_description += str(sibling)
 
         strainer = SoupStrainer(["a", "p"])
-        return str(BeautifulSoup(image_description, "lxml", parse_only=strainer))
+        return str(BeautifulSoup(image_description, "html.parser", parse_only=strainer))
 
     def get_image_credits(self, html: str) -> str:
         """
@@ -52,7 +52,7 @@ class Scraper:
         Returns:
             str: Credits paragraph from the image page.
         """
-        soup = BeautifulSoup(html, "lxml")
+        soup = BeautifulSoup(html, "html.parser")
         footer = soup.find("footer")
 
         if not footer:
@@ -82,7 +82,7 @@ class Scraper:
         Returns:
             str: Url of the image.
         """
-        soup = BeautifulSoup(html, "lxml")
+        soup = BeautifulSoup(html, "html.parser")
         link_list = soup.find("div", {"class": "media-library-links-list"})
 
         if not link_list:
@@ -136,7 +136,7 @@ class Scraper:
             str: A string containing the title of the image.
         """
         try:
-            soup = BeautifulSoup(html, "lxml", parse_only=SoupStrainer("meta"))
+            soup = BeautifulSoup(html, "html.parser", parse_only=SoupStrainer("meta"))
             return soup.find("meta", property="og:title")["content"]
         except TypeError:
             raise ValueError("Could not find title in meta tags. \n%s" % html)
@@ -163,7 +163,7 @@ class Scraper:
         Returns:
             List[str]: A list of all valid image urls.
         """
-        soup = BeautifulSoup(self.gallery_page_html, "lxml")
+        soup = BeautifulSoup(self.gallery_page_html, "html.parser")
         search = soup.find_all(
             "a", {"href": re.compile("/contents/media/images/.*"), "class": "link-wrap"}
         )
