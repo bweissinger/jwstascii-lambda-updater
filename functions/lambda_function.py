@@ -25,6 +25,7 @@ def lambda_handler(event: Dict[str, Any], context: object) -> Dict[str, Any]:
         site_scraper,
         image_info["image_download_url"],
         event["ascii_art_num_columns"],
+        event["ascii_charset"],
         event["s3_bucket"],
         event["temp_dir"],
     )
@@ -107,6 +108,7 @@ def add_new_image(
     site_scraper: jwst_site_scraper.Scraper,
     image_url: str,
     num_colums: int,
+    charset: str,
     bucket_name: str,
     temp_dir: Path,
 ) -> str:
@@ -117,7 +119,8 @@ def add_new_image(
     Args:
         site_scraper (jwst_site_scraper.Scraper): JWST site scraper.
         image_url (str): Url of the jwst image.
-        num_colums (int): Number of text columns to use for the image conversion
+        num_colums (int): Number of text columns to use for the image conversion.
+        charset (str): String of characters to use for ascii image generation.
         bucket_name (str): Name of the S3 bucket.
         temp_dir (str): Path of the temporary directory to use for image conversion. For
             AWS Lambda, /tmp is user writable.
@@ -131,7 +134,7 @@ def add_new_image(
             image_file_name = file
             image_path = Path(temp_dir, file)
     try:
-        ascii_conversion.convert_image(image_path, num_colums, image_path)
+        ascii_conversion.convert_image(image_path, num_colums, charset, image_path)
     except UnboundLocalError:
         raise RuntimeError("Could not find suitable image in directory: %s" % temp_dir)
     s3 = boto3.client("s3")

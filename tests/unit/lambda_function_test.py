@@ -159,19 +159,20 @@ class TestGetNewImageInfo(TestCase):
 class TestAddNewImage(TestCase):
     def setUp(self) -> None:
         self.scraper = Mock()
+        self.charset = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ "
         return super().setUp()
 
     def test_uses_png(self, convert_image, listdir, s3_client):
         listdir.return_value = ["myimage.png"]
         file_path = lambda_function.add_new_image(
-            self.scraper, "img_url", 200, "s3bucket", Path("tmppath")
+            self.scraper, "img_url", 200, self.charset, "s3bucket", Path("tmppath")
         )
         self.assertEqual(file_path, "myimage.png")
 
     def test_uses_tif(self, convert_image, listdir, s3_client):
         listdir.return_value = ["myimage.tif"]
         file_path = lambda_function.add_new_image(
-            self.scraper, "img_url", 200, "s3bucket", Path("tmppath")
+            self.scraper, "img_url", 200, self.charset, "s3bucket", Path("tmppath")
         )
         self.assertEqual(file_path, "myimage.tif")
 
@@ -183,6 +184,7 @@ class TestAddNewImage(TestCase):
             self.scraper,
             "img_url",
             200,
+            self.charset,
             "s3bucket",
             Path("tmppath"),
         )
@@ -190,14 +192,14 @@ class TestAddNewImage(TestCase):
     def test_download_image_call(self, convert_image, listdir, s3_client):
         listdir.return_value = ["myimage.png"]
         lambda_function.add_new_image(
-            self.scraper, "img_url", 200, "s3bucket", Path("tmppath")
+            self.scraper, "img_url", 200, self.charset, "s3bucket", Path("tmppath")
         )
         self.scraper.download_image.assert_called_once_with("img_url", Path("tmppath"))
 
     def test_s3_upload(self, convert_image, listdir, s3_client):
         listdir.return_value = ["myimage.png"]
         lambda_function.add_new_image(
-            self.scraper, "img_url", 200, "s3bucket", Path("tmppath")
+            self.scraper, "img_url", 200, self.charset, "s3bucket", Path("tmppath")
         )
         s3_client().upload_file.assert_called_once_with(
             "tmppath/myimage.png", "s3bucket", "images/myimage.png"
