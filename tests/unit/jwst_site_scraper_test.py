@@ -194,6 +194,10 @@ class TestGetImageTitle(TestCase):
         html = '<meta property="og:title" content="Super Bangin Title"><title>Some title</title>'
         self.assertEqual(self.scraper.get_image_title(html), "Super Bangin Title")
 
+    def test_html_entities_converted(self):
+        html = """<meta property="og:title" content="Super Bangin Title&amp;nbsp;">"""
+        self.assertEqual(self.scraper.get_image_title(html), "Super Bangin Title")
+
 
 class TestGetNextGallerySearchPage(TestCase):
     def setUp(self) -> None:

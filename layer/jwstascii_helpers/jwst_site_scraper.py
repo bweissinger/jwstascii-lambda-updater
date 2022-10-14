@@ -137,7 +137,8 @@ class Scraper:
         """
         try:
             soup = BeautifulSoup(html, "html.parser", parse_only=SoupStrainer("meta"))
-            return soup.find("meta", property="og:title")["content"]
+            content = soup.find("meta", property="og:title")["content"]
+            return BeautifulSoup(content, "html.parser").prettify().strip("\n")
         except TypeError:
             raise ValueError("Could not find title in meta tags. \n%s" % html)
 
