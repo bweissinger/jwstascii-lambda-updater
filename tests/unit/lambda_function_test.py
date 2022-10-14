@@ -200,7 +200,7 @@ class TestAddNewImage(TestCase):
             self.scraper, "img_url", 200, "s3bucket", Path("tmppath")
         )
         s3_client().upload_file.assert_called_once_with(
-            Path("tmppath/myimage.png"), "s3bucket", "images"
+            "tmppath/myimage.png", "s3bucket", "images/myimage.png"
         )
 
 

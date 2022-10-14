@@ -135,7 +135,7 @@ def add_new_image(
     except UnboundLocalError:
         raise RuntimeError("Could not find suitable image in directory: %s" % temp_dir)
     s3 = boto3.client("s3")
-    s3.upload_file(image_path, bucket_name, "images")
+    s3.upload_file(str(image_path), bucket_name, str(Path("images", image_file_name)))
     return image_file_name
 
 
