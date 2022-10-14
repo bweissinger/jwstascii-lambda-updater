@@ -13,6 +13,7 @@ from os import walk, chdir, getcwd
 @freeze_time("2022-10-01")
 @patch("jwstascii_helpers.git_tools.Repo")
 @patch("lambda_function.boto3")
+@patch("os.system")
 class TestLambdaFunction(TestCase):
     def add_response_from_file(self, file_path, url, read_as_bytes=False):
         open_type = "r"
@@ -63,14 +64,14 @@ class TestLambdaFunction(TestCase):
         return super().setUp()
 
     @responses.activate
-    def test_normal_workflow(self, boto3, repo):
+    def test_normal_workflow(self, os_system, boto3, repo):
         with TemporaryDirectory() as tempdir:
+            self.event["temp_dir"] = tempdir
             starting_directory = getcwd()
             expected_files_path = Path(
                 starting_directory, "tests", "resources", "expected_site_files"
             )
             repo_path = Path(tempdir, "jwstascii")
-            # makedirs(repo_path)
             copytree(Path("tests", "resources", "site_files", ""), repo_path)
             repo().repo_dir = repo_path
 

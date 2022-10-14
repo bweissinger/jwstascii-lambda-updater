@@ -12,6 +12,10 @@ from jwstascii_helpers import (
 
 
 def lambda_handler(event: Dict[str, Any], context: object) -> Dict[str, Any]:
+
+    # Lambda will sometimes hold resources between invocations, ensure dir is clean.
+    os.system("rm -rf %s" % str(Path(event["temp_dir"], "*")))
+
     repo = prepare_repo(
         event["key_name"], event["repo_url"], event["git_branch"], event["temp_dir"]
     )
