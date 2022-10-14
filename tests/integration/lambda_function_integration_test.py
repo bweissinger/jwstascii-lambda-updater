@@ -54,6 +54,7 @@ class TestLambdaFunction(TestCase):
             "repo_url": "url_of_git_repo",
             "git_branch": "automated",
             "ascii_art_num_columns": 25,
+            "ascii_charset": "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ ",
             "s3_bucket": "jwstascii",
             "temp_dir": "/tmp",
             "ignore_regex": ["(?i).*hubble.*"],
