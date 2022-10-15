@@ -128,7 +128,7 @@ class TestUpdatePriorPage(TestCase):
 
     def test_correct_file_open(self, soup_from_file, write_file):
         soup_from_file.return_value = BeautifulSoup(
-            self.stylesheet_html + self.link_html, "lxml"
+            self.stylesheet_html + self.link_html, "html.parser"
         )
         file_path = Path("test/file/path.html")
         site_file_tools.update_prior_page(
@@ -139,7 +139,7 @@ class TestUpdatePriorPage(TestCase):
         soup_from_file.assert_called_once_with(file_path)
 
     def test_link_not_found(self, soup_from_file, write_file):
-        soup_from_file.return_value = BeautifulSoup(self.stylesheet_html, "lxml")
+        soup_from_file.return_value = BeautifulSoup(self.stylesheet_html, "html.parser")
         self.assertRaises(
             RuntimeError,
             site_file_tools.update_prior_page,
@@ -149,7 +149,7 @@ class TestUpdatePriorPage(TestCase):
         )
 
     def test_stylesheet_not_found(self, soup_from_file, write_file):
-        soup_from_file.return_value = BeautifulSoup(self.link_html, "lxml")
+        soup_from_file.return_value = BeautifulSoup(self.link_html, "html.parser")
         self.assertRaises(
             RuntimeError,
             site_file_tools.update_prior_page,
@@ -160,14 +160,14 @@ class TestUpdatePriorPage(TestCase):
 
     def test_properly_updated(self, soup_from_file, write_file):
         soup_from_file.return_value = BeautifulSoup(
-            self.stylesheet_html + self.link_html, "lxml"
+            self.stylesheet_html + self.link_html, "html.parser"
         )
         site_file_tools.update_prior_page(
             Path("file_path"), Path("new_file_path"), date.today()
         )
         write_file.assert_called_once_with(
             Path("file_path"),
-            '<html>\n <head>\n  <link href="/styles/main.css" rel="stylesheet"/>\n </head>\n <body>\n  <li id="tomorrow_link">\n   <a href="new_file_path">\n    01|01|00\n   </a>\n  </li>\n </body>\n</html>',
+            '<link href="/styles/main.css" rel="stylesheet"/>\n<li id="tomorrow_link">\n <a href="new_file_path">\n  01|01|00\n </a>\n</li>',
         )
 
 
@@ -198,7 +198,7 @@ class TestAddLinkToArchiveList(TestCase):
         return super().setUp()
 
     def test_link_added(self, soup_from_file, write_file):
-        soup_from_file.return_value = BeautifulSoup(self.html, "lxml")
+        soup_from_file.return_value = BeautifulSoup(self.html, "html.parser")
         expected_html = """<html>\n <body>\n  <ol class="archive_list">\n   <li>\n    <span>\n     02 October 2022\n    </span>\n    <a data-jwst_url="some-url.com" href="path/to/page.html">\n     McTitle\n    </a>\n   </li>\n   <li>\n    <span>\n     26 September 2022\n    </span>\n    <a data-jwst_url="url_1.com" href="link 1">\n     Second title\n    </a>\n   </li>\n   <li>\n    <span>\n     25 September 2022\n    </span>\n    <a data-jwst_url="url_2.com" href="link 2">\n     Third image\n    </a>\n   </li>\n  </ol>\n </body>\n</html>"""
 
         site_file_tools.add_link_to_archive_list(
@@ -213,7 +213,7 @@ class TestAddLinkToArchiveList(TestCase):
         )
 
     def test_soup_from_file_call(self, soup_from_file, write_file):
-        soup_from_file.return_value = BeautifulSoup(self.html, "lxml")
+        soup_from_file.return_value = BeautifulSoup(self.html, "html.parser")
         site_file_tools.add_link_to_archive_list(
             "path/to/index.html",
             "path/to/page.html",
@@ -254,7 +254,7 @@ class TestAddNewMonthToArchive(TestCase):
     def test_template_generation_call(
         self, generate_from_template, soup_from_file, write_file
     ):
-        soup_from_file.return_value = BeautifulSoup(self.html, "lxml")
+        soup_from_file.return_value = BeautifulSoup(self.html, "html.parser")
         self.add_month_call_wrapper("2022", "December")
         template_args = {
             "main_archive_html_path": "/archive",
@@ -267,7 +267,7 @@ class TestAddNewMonthToArchive(TestCase):
     def test_month_in_new_year(
         self, generate_from_template, soup_from_file, write_file
     ):
-        soup_from_file.return_value = BeautifulSoup(self.html, "lxml")
+        soup_from_file.return_value = BeautifulSoup(self.html, "html.parser")
         output_html = """<div>
             <h1>Archive</h1>
             <h1 id="daily-list-link"><a href="./daily_list">View Daily List</a></h1>
@@ -286,13 +286,14 @@ class TestAddNewMonthToArchive(TestCase):
         </div>"""
         self.add_month_call_wrapper("2023", "october")
         write_file.assert_any_call(
-            self.path_to_archive_overview, BeautifulSoup(output_html, "lxml").prettify()
+            self.path_to_archive_overview,
+            BeautifulSoup(output_html, "html.parser").prettify(),
         )
 
     def test_month_in_existing_year(
         self, generate_from_template, soup_from_file, write_file
     ):
-        soup_from_file.return_value = BeautifulSoup(self.html, "lxml")
+        soup_from_file.return_value = BeautifulSoup(self.html, "html.parser")
         output_html = """<div>
             <h1>Archive</h1>
             <h1 id="daily-list-link"><a href="./daily_list">View Daily List</a></h1>
@@ -308,13 +309,14 @@ class TestAddNewMonthToArchive(TestCase):
         </div>"""
         self.add_month_call_wrapper("2022", "december")
         write_file.assert_called_with(
-            self.path_to_archive_overview, BeautifulSoup(output_html, "lxml").prettify()
+            self.path_to_archive_overview,
+            BeautifulSoup(output_html, "html.parser").prettify(),
         )
 
     def test_month_already_present(
         self, generate_from_template, soup_from_file, write_file
     ):
-        soup_from_file.return_value = BeautifulSoup(self.html, "lxml")
+        soup_from_file.return_value = BeautifulSoup(self.html, "html.parser")
         self.add_month_call_wrapper("2022", "September")
         generate_from_template.assert_not_called()
         write_file.assert_not_called()
@@ -342,7 +344,7 @@ class TestAddLinksToArchive(TestCase):
                 </li>
             </ol>"""
         self.url = "page_url"
-        self.default_soup = BeautifulSoup(self.default_html, "lxml")
+        self.default_soup = BeautifulSoup(self.default_html, "html.parser")
         return super().setUp()
 
     def test_add_month_to_archive_call_correct(
@@ -409,7 +411,7 @@ class TestAddLinksToArchive(TestCase):
                     <span>25</span><a href="path 2">Image description 2</a>
                 </li>
             </ol>""",
-            "lxml",
+            "html.parser",
         )
         write_file.assert_called_with(
             Path(self.archive_path, "2022", "september", "index.html"),
@@ -425,7 +427,7 @@ class TestAddLinksToArchive(TestCase):
             <h2>October 2022</h2>
             <ol class="archive_list">
             </ol>""",
-            "lxml",
+            "html.parser",
         )
         soup_from_file.side_effect = [FileNotFoundError(), new_soup]
         site_file_tools.update_archive(
@@ -444,7 +446,7 @@ class TestAddLinksToArchive(TestCase):
                     <span>01</span><a href="path/to/new/page">This is a test image</a>
                 </li>
             </ol>""",
-            "lxml",
+            "html.parser",
         )
         write_file.assert_called_with(
             Path(self.archive_path, "2022", "october", "index.html"),
@@ -471,7 +473,7 @@ class TestGetLinksFromArchiveList(TestCase):
                     <a data-jwst_url="jwst_url_3.com" href="Path/3">Image Title 3</a>
                 </li>
             </ol>"""
-        soup_from_file.return_value = BeautifulSoup(html, "lxml")
+        soup_from_file.return_value = BeautifulSoup(html, "html.parser")
         links = site_file_tools.get_links_from_archive_list(Path("path/to/archive"))
         self.assertEqual(links, ["jwst_url_1.com", "jwst_url_2.com", "jwst_url_3.com"])
 
@@ -484,20 +486,22 @@ class TestGetDateOfCurrentPage(TestCase):
 
     def test_archive_file_opened(self, soup_from_file):
         soup_from_file.return_value = BeautifulSoup(
-            self.html % "/2022/october/01", "lxml"
+            self.html % "/2022/october/01", "html.parser"
         )
         site_file_tools.get_date_of_current_page(Path("archive/path"))
         soup_from_file.assert_called_with(Path("archive/path"))
 
     def test_correct_date(self, soup_from_file):
         soup_from_file.return_value = BeautifulSoup(
-            self.html % "/2022/october/01", "lxml"
+            self.html % "/2022/october/01", "html.parser"
         )
         return_date = site_file_tools.get_date_of_current_page(Path("archive/path"))
         self.assertEqual(return_date, date(2022, 10, 1))
 
     def test_mangled_date(self, soup_from_file):
-        soup_from_file.return_value = BeautifulSoup(self.html % "/2022/10/01", "lxml")
+        soup_from_file.return_value = BeautifulSoup(
+            self.html % "/2022/10/01", "html.parser"
+        )
         self.assertRaises(
             ValueError, site_file_tools.get_date_of_current_page, Path("archive/path")
         )
