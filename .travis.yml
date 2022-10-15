@@ -1,0 +1,32 @@
+language: python
+python:
+  - "3.9"
+
+before_install:
+  - pip install -U pip
+  - pip install -U pytest
+  - pip install coveralls
+  - pip install build
+  - pip install -r requirements.txt
+
+script:
+  - coverage run -m pytest
+after_success:
+  - coveralls
+
+deploy:
+  - provider: script
+    script: make package
+    on:
+      branch: main
+  - provider: lambda
+    access_key_id: $ACCESS_KEY_ID
+    secret_access_key: $SECRET_ACCESS_KEY
+    role: $ROLE_ARN
+    region: "us-east-2"
+    function_name: "jwstascii-updater"
+    handler_name: "handler"
+    runtime: "python3.9"
+    zip: build/jwstascii-lambda-updater.zip
+    on:
+      branch: main
