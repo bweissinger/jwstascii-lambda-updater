@@ -1,3 +1,4 @@
+from bs4 import BeautifulSoup
 import lambda_function
 import responses
 import re
@@ -92,9 +93,10 @@ class TestLambdaFunction(TestCase):
             self.assertEqual(len(set(output_files) - set(expected_files)), 0)
 
             for output_file in output_files:
-                with open(Path(repo_path, output_file), "rb") as a:
-                    with open(Path(expected_files_path, output_file), "rb") as b:
-                        self.assertEqual(a.read(), b.read())
+                with open(Path(repo_path, output_file), "rb") as file:
+                    output_lines = file.readlines()
+                with open(Path(expected_files_path, output_file), "rb") as expected:
+                    self.assertListEqual(output_lines, expected.readlines())
 
     @freeze_time("2022-09-26")
     @responses.activate
