@@ -19,16 +19,17 @@ class test_set_git_ssh_key_from_secrets(TestCase):
         self.ssh_key_name = "test_key_name"
         self.ssh_key_contents = "ssh_key_contents"
         parameters.get_secret.return_value = self.ssh_key_contents
-        self.repo.set_git_ssh_key_from_secrets(self.ssh_key_name, self.file_path)
         return super().setUp()
 
     def tearDown(self):
         os.remove(self.file_path)
 
     def test_ssh_key_retreival(self):
+        self.repo.set_git_ssh_key_from_secrets(self.ssh_key_name, self.file_path)
         parameters.get_secret.assert_called_with(self.ssh_key_name)
 
     def test_ssh_key_writing(self):
+        self.repo.set_git_ssh_key_from_secrets(self.ssh_key_name, self.file_path)
         contents = ""
         with open(self.file_path, "r") as file:
             for line in file:
@@ -36,6 +37,7 @@ class test_set_git_ssh_key_from_secrets(TestCase):
         self.assertEqual(contents, self.ssh_key_contents)
 
     def test_ssh_key_permissions_set(self):
+        self.repo.set_git_ssh_key_from_secrets(self.ssh_key_name, self.file_path)
         os.chmod.assert_called_with(self.file_path, 0o600)
 
     @patch("builtins.open", mock_open())
@@ -45,6 +47,24 @@ class test_set_git_ssh_key_from_secrets(TestCase):
         self.repo.set_git_ssh_key_from_secrets(self.ssh_key_name, "test/path")
         assert os.environ["GIT_SSH_COMMAND"] == (
             "ssh -i test/path -o StrictHostKeyChecking=no"
+        )
+
+    def test_get_parameter_error(self):
+        parameters.get_secret.side_effect = parameters.GetParameterError()
+        self.assertRaises(
+            ValueError,
+            self.repo.set_git_ssh_key_from_secrets,
+            self.ssh_key_name,
+            self.file_path,
+        )
+
+    def test_transform_parameter_error(self):
+        parameters.get_secret.side_effect = parameters.TransformParameterError
+        self.assertRaises(
+            ValueError,
+            self.repo.set_git_ssh_key_from_secrets,
+            self.ssh_key_name,
+            self.file_path,
         )
 
 
