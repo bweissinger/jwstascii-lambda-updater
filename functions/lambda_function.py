@@ -19,6 +19,16 @@ def lambda_handler(event: Dict[str, Any], context: object) -> Dict[str, Any]:
     repo = prepare_repo(
         event["key_name"], event["repo_url"], event["git_branch"], event["temp_dir"]
     )
+    os.chdir(repo.repo_dir)
+
+    today_date = datetime.utcnow().date()
+    previous_page_date = site_file_tools.get_date_of_current_page(Path("index.html"))
+    if today_date == previous_page_date:
+        raise RuntimeError(
+            "Page for todays date of %s already exists"
+            % today_date.strftime("%d %B %Y")
+        )
+
     site_scraper = jwst_site_scraper.Scraper()
     image_info = get_new_image_info(site_scraper, event["ignore_regex"], repo.repo_dir)
     image_file_name = add_new_image(
@@ -30,16 +40,12 @@ def lambda_handler(event: Dict[str, Any], context: object) -> Dict[str, Any]:
         event["temp_dir"],
     )
 
-    os.chdir(repo.repo_dir)
-
-    today_date = datetime.utcnow().date()
     new_page_path = Path(
         today_date.strftime("%Y"),
         today_date.strftime("%B").lower(),
         today_date.strftime("%d"),
         "index.html",
     )
-    previous_page_date = site_file_tools.get_date_of_current_page(Path("index.html"))
     previous_page_path = Path(
         previous_page_date.strftime("%Y/%B/%d").lower(), "index.html"
     )

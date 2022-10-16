@@ -10,7 +10,6 @@ from unittest.mock import patch
 from os import walk, chdir, getcwd
 
 
-@freeze_time("2022-10-01")
 @patch("jwstascii_helpers.git_tools.Repo")
 @patch("lambda_function.boto3")
 @patch("os.system")
@@ -64,6 +63,7 @@ class TestLambdaFunction(TestCase):
         }
         return super().setUp()
 
+    @freeze_time("2022-10-01")
     @responses.activate
     def test_normal_workflow(self, os_system, boto3, repo):
         with TemporaryDirectory() as tempdir:
@@ -95,3 +95,18 @@ class TestLambdaFunction(TestCase):
                 with open(Path(repo_path, output_file), "rb") as a:
                     with open(Path(expected_files_path, output_file), "rb") as b:
                         self.assertEqual(a.read(), b.read())
+
+    @freeze_time("2022-09-26")
+    @responses.activate
+    def test_page_exists(self, os_system, boto3, repo):
+        with TemporaryDirectory() as tempdir:
+            starting_directory = getcwd()
+            self.event["temp_dir"] = tempdir
+            repo_path = Path(tempdir, "jwstascii")
+            copytree(Path("tests", "resources", "site_files", ""), repo_path)
+            repo().repo_dir = repo_path
+
+            self.assertRaises(
+                RuntimeError, lambda_function.lambda_handler, self.event, None
+            )
+            chdir(starting_directory)
