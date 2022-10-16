@@ -25,6 +25,7 @@ deploy:
     role: $ROLE_ARN
     region: "us-east-2"
     function_name: "jwstascii-updater"
+    module_name: "lambda_function"
     handler_name: "lambda_handler"
     runtime: "python3.9"
     zip: build/jwstascii-lambda-updater.zip
