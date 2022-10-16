@@ -99,6 +99,8 @@ class TestGetImageDownloadUrl(TestCase):
         self.full_res_tif_html = '<a href="//stsci-opo.org/STScI-01G8GY7CZNNQH69BJG1ZGQ4D5B.tif" class="link-icon-added">Full Res, 11264 X 3904, TIF (55.33&nbsp;MB)&nbsp;<span class="link-icon svg-sprite -image-file-icon"><svg role="img" aria-label="(image File)" focusable="false"><use xlink:href="#image-file-icon"></use></svg></span></a>'
         self.png_2k_html = '<a href="//stsci-opo.org/STScI-01G8GYE2PQWY96TDX66CHQRMPQ.png" class="link-icon-added">2000 X 693, PNG (1.65&nbsp;MB)&nbsp;<span class="link-icon svg-sprite -image-file-icon"><svg role="img" aria-label="(image File)" focusable="false"><use xlink:href="#image-file-icon"></use></svg></span></a>'
         self.div_start = '<div class="media-library-links-list">'
+        self.png_2k_portrait_html = '<a href="//stsci-opo.org/STScI-01G8GYE2PQWY96TDX66CHQFEK.png" class="link-icon-added">693 X 2000, PNG (1.65&nbsp;MB)&nbsp;<span class="link-icon svg-sprite -image-file-icon"><svg role="img" aria-label="(image File)" focusable="false"><use xlink:href="#image-file-icon"></use></svg></span></a>'
+        self.div_start = '<div class="media-library-links-list">'
         self.download_options = "<p><strong>Download Options:</strong></p>"
         self.div_end = "</div>"
         return super().setUp()
@@ -115,6 +117,20 @@ class TestGetImageDownloadUrl(TestCase):
         self.assertEqual(
             self.scraper.get_image_download_url(html),
             "https://stsci-opo.org/STScI-01G8GYE2PQWY96TDX66CHQRMPQ.png",
+        )
+
+    def test_2k_image_priority(self):
+        html = (
+            self.div_start
+            + self.download_options
+            + self.full_res_tif_html
+            + self.png_2k_portrait_html
+            + self.full_res_png_html
+            + self.div_end
+        )
+        self.assertEqual(
+            self.scraper.get_image_download_url(html),
+            "https://stsci-opo.org/STScI-01G8GYE2PQWY96TDX66CHQFEK.png",
         )
 
     def test_full_res_png_priority(self):

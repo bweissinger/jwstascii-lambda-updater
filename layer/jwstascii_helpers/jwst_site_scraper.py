@@ -89,7 +89,8 @@ class Scraper:
             raise ValueError("Unable to locate download link list in html: \n%s" % html)
 
         link_priority_regex = [
-            re.compile(r"2000\s?x\s?\d+.*PNG.*", re.I),  # 2k PNG file
+            re.compile(r"2000\s?x\s?\d+.*PNG.*", re.I),  # 2k PNG landscape
+            re.compile(r".*x\s?2000+.*PNG.*", re.I),  # 2k PNG portrait
             re.compile(r"full\sres.*\d+\s?x\s?\d+.*PNG.*", re.I),  # Full res PNG
             re.compile(r"full\sres.*\d+\s?x\s?\d+.*TIF.*", re.I),  # Full res tif
         ]
