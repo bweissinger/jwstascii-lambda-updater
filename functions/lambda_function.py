@@ -69,7 +69,7 @@ def lambda_handler(event: Dict[str, Any], context: object) -> Dict[str, Any]:
         Path("index.html"),
         {
             "page_parent_dir": "/" + str(new_page_path.parent),
-            "title": image_info["image_title"],
+            "image_title": image_info["image_title"],
         },
     )
 
