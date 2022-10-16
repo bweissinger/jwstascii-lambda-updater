@@ -37,7 +37,7 @@ class Repo:
                 parameters.TransformParameterError,
                 parameters.GetParameterError,
             ) as e:
-                raise ValueError("Unable to retrieve ssh key." + e.msg)
+                raise ValueError("Unable to retrieve ssh key." + str(e))
 
             os.chmod(ssh_key_path, 0o600)
             os.environ["GIT_SSH_COMMAND"] = (
