@@ -1,5 +1,6 @@
 import os
 import boto3
+import random
 from typing import Any, Dict, List
 from pathlib import Path
 from datetime import datetime, timedelta, date
@@ -30,7 +31,12 @@ def lambda_handler(event: Dict[str, Any], context: object) -> Dict[str, Any]:
         )
 
     site_scraper = jwst_site_scraper.Scraper()
-    image_info = get_new_image_info(site_scraper, event["ignore_regex"], repo.repo_dir)
+    image_info = get_new_image_info(
+        site_scraper,
+        event["ignore_regex"],
+        repo.repo_dir,
+        event["num_links_to_ignore_when_no_new"],
+    )
     image_file_name = add_new_image(
         site_scraper,
         image_info["image_download_url"],
@@ -149,21 +155,34 @@ def add_new_image(
 
 
 def get_new_image_info(
-    site_scraper: jwst_site_scraper.Scraper, ignore_regex: List[str], repo_dir: Path
+    site_scraper: jwst_site_scraper.Scraper,
+    ignore_regex: List[str],
+    repo_dir: Path,
+    ignore_last_n_links_when_no_new: int,
 ) -> Dict[str, str]:
+    """Scrapes image info from the jwst website.
 
-    """
-    Scrapes image info from the jwst website.
+
+    Args:
+        site_scraper (jwst_site_scraper.Scraper): Scraper object.
+        ignore_regex (List[str]): A list of regex strings to use for filtering images.
+        repo_dir (Path): _description_
+        ignore_last_n_links_when_no_new (int): Number of previous images to ignore when there are no new images available. Positive values will ignore the latest n links. Negative values will ignore the oldest n links.
 
     Returns:
         Dict[str:str]: A dictionary object containing image attributes.
+
     """
     url = get_next_image_url(site_scraper, ignore_regex, repo_dir)
 
     # Get previously used image if no new images are available
     if not url:
         url = get_next_image_url(
-            site_scraper, ignore_regex, repo_dir, ignore_archive_links=True
+            site_scraper,
+            ignore_regex,
+            repo_dir,
+            ignore_archive_links=False,
+            ignore_last_n_archive_links=ignore_last_n_links_when_no_new,
         )
 
     html = site_scraper.get_url_with_retries(url, {}, 5).text
@@ -203,7 +222,8 @@ def get_next_image_url(
     scraper: jwst_site_scraper.Scraper,
     ignore_regex: List[str],
     repo_dir: Path,
-    ignore_archive_links: bool = False,
+    ignore_all_archive_links: bool = True,
+    ignore_last_n_archive_links: int = 0,
 ) -> str:
     """
     Gets the url of an unused jwst image from the jwst website.
@@ -213,7 +233,8 @@ def get_next_image_url(
         ignore_regex (List[str]): A list of regex strings to use for filtering
             images from the jwst website.
         repo_dir (Path): Path of the git repo.
-        ignore_archive_links (bool, optional): Should the archive links be ignored. Defaults to False.
+        ignore_all_archive_links (int, optional): Ignore all previously used links. Takes precedent over ignore_last_n_archive_links.
+        ignore_last_n_archive_links (int, optional): Number of archive links to ignore. Positive numbers ignore the most recent n archive links, negative ignore the oldest n links.
 
     Returns:
         str: Url of the found image.
@@ -227,12 +248,21 @@ def get_next_image_url(
     # Only use image links that do not fit search pattern in ignore_regex
     links = scraper.get_image_links_from_gallery_search(ignore_regex)
     used_links = site_file_tools.get_links_from_archive_list(Path(repo_dir, "archive"))
-    if ignore_archive_links:
-        used_links = []
+    if not ignore_all_archive_links:
+        if ignore_last_n_archive_links < 0:
+            used_links = used_links[ignore_last_n_archive_links:]
+        elif ignore_last_n_archive_links > 0:
+            used_links = used_links[:ignore_last_n_archive_links]
+
     available_links = set(links) - set(used_links)
-    if available_links:
-        return available_links.pop()
-    else:
+    try:
+        return random.sample(available_links, 1)[0]
+    except ValueError:
+        # Search next page for available links
         return get_next_image_url(
-            scraper, ignore_regex, repo_dir, ignore_archive_links=ignore_archive_links
+            scraper,
+            ignore_regex,
+            repo_dir,
+            ignore_all_archive_links=ignore_all_archive_links,
+            ignore_last_n_archive_links=ignore_last_n_archive_links,
         )

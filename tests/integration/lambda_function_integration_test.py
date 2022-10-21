@@ -61,6 +61,7 @@ class TestLambdaFunction(TestCase):
             "git_author": "jwstascii-bot",
             "git_email": "jwstascii-bot",
             "test_url": "https://webbtelescope.org/contents/media/images/01GEJB2906TM9VR2FSJ4TFMNQM",
+            "num_links_to_ignore_when_no_new": 7,
         }
         return super().setUp()
 
