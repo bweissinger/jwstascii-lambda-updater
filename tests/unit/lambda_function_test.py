@@ -57,17 +57,34 @@ class TestGetNextImageUrl(TestCase):
         )
 
     def test_ignore_archive_links(self, links_from_archive):
-        links_from_archive.return_value = ["link_1", "link_2", "link_3"]
+        links_from_archive.return_value = ["link_1", "link_2"]
         self.scraper.get_image_links_from_gallery_search.side_effect = [
             ["link_1", "link_2", "link_3"],
-            ["link_1", "link_2"],
+            ["link_1", "link_2", "link_3"],
             ["link_4", "link_5"],
             ["link_4"],
         ]
         link = lambda_function.get_next_image_url(
-            self.scraper, [], Path("some_path"), ignore_archive_links=True
+            self.scraper, [], Path("some_path"), ignore_all_archive_links=False
         )
-        self.assertIn(link, ["link_1", "link_2", "link_3"])
+        self.assertTrue(link == "link_3")
+
+    def test_ignore_n_links(self, links_from_archive):
+        links_from_archive.return_value = ["link_1", "link_2", "link_3"]
+        self.scraper.get_image_links_from_gallery_search.side_effect = [
+            ["link_1", "link_2", "link_3"],
+            ["link_1", "link_2", "link_3"],
+            ["link_4", "link_5"],
+            ["link_4"],
+        ]
+        link = lambda_function.get_next_image_url(
+            self.scraper,
+            [],
+            Path("some_path"),
+            ignore_all_archive_links=False,
+            ignore_last_n_archive_links=2,
+        )
+        self.assertTrue(link == "link_3")
 
 
 @patch("jwstascii_helpers.git_tools.Repo")
@@ -110,7 +127,7 @@ class TestGetNewImageInfo(TestCase):
     def test_get_next_image_url_call(self, get_next_image_url):
         get_next_image_url.return_value = "url"
         lambda_function.get_new_image_info(
-            self.scraper, ["ignore_1"], Path("path/to/repo")
+            self.scraper, ["ignore_1"], Path("path/to/repo"), 1
         )
         get_next_image_url.assert_called_once_with(
             self.scraper, ["ignore_1"], Path("path/to/repo")
@@ -119,16 +136,20 @@ class TestGetNewImageInfo(TestCase):
     def test_get_next_image_url_called_twice(self, get_next_image_url):
         get_next_image_url.side_effect = ["", "url"]
         lambda_function.get_new_image_info(
-            self.scraper, ["ignore_1"], Path("path/to/repo")
+            self.scraper, ["ignore_1"], Path("path/to/repo"), 1
         )
         get_next_image_url.assert_called_with(
-            self.scraper, ["ignore_1"], Path("path/to/repo"), ignore_archive_links=True
+            self.scraper,
+            ["ignore_1"],
+            Path("path/to/repo"),
+            ignore_archive_links=False,
+            ignore_last_n_archive_links=1,
         )
 
     def test_get_url_with_retries(self, get_next_image_url):
         get_next_image_url.side_effect = ["image_url", "image_url"]
         lambda_function.get_new_image_info(
-            self.scraper, ["ignore_1"], Path("path/to/repo")
+            self.scraper, ["ignore_1"], Path("path/to/repo"), 1
         )
         self.scraper.get_url_with_retries.assert_called_once_with("image_url", {}, 5)
 
@@ -139,7 +160,7 @@ class TestGetNewImageInfo(TestCase):
         self.scraper.get_image_credits.return_value = "credits"
         self.scraper.get_image_download_url.return_value = "download_url"
         output = lambda_function.get_new_image_info(
-            self.scraper, ["ignore_1"], Path("path/to/repo")
+            self.scraper, ["ignore_1"], Path("path/to/repo"), 1
         )
         self.assertEqual(
             output,
