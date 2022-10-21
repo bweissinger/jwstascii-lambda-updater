@@ -1,5 +1,6 @@
 import os
 import boto3
+import random
 from typing import Any, Dict, List
 from pathlib import Path
 from datetime import datetime, timedelta, date
@@ -255,8 +256,8 @@ def get_next_image_url(
 
     available_links = set(links) - set(used_links)
     try:
-        return available_links.pop()
-    except KeyError:
+        return random.sample(available_links, 1)[0]
+    except ValueError:
         # Search next page for available links
         return get_next_image_url(
             scraper,
