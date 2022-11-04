@@ -13,6 +13,18 @@ class TestGetImageDescription(TestCase):
         self.scraper = Scraper()
         return super().setUp()
 
+    def construct_html(self, header_type, include_footer):
+        html = """<%s>About This Image</%s><p>Some text<a href="some_url" target="_self">href_text</a> continued description.</p>
+                <p>This is another paragraph</p>
+                <div><button>some button</button><p>Include Me!</p></div>""" % (
+            (header_type, header_type)
+        )
+
+        if include_footer:
+            html += """<footer>Footer stuff here</footer>"""
+
+        return html
+
     def test_no_header(self):
         self.assertRaises(
             ValueError, self.scraper.get_image_description, "No header here."
@@ -22,18 +34,21 @@ class TestGetImageDescription(TestCase):
         self.assertRaises(ValueError, self.scraper.get_image_description, "")
 
     def test_correctly_parsed_html(self):
-        html = """<h4>About This Image</h4><p>Some text<a href="some_url" target="_self">href_text</a> continued description.</p>
-                <p>This is another paragraph</p>
-                <div><button>some button</button><p>Include Me!</p></div>
-                <footer>Footer stuff here</footer>"""
-
+        html = self.construct_html("h4", True)
         expected = """<p>Some text<a href="some_url" target="_self">href_text</a> continued description.</p><p>This is another paragraph</p><p>Include Me!</p>"""
 
         self.assertEqual(self.scraper.get_image_description(html), expected)
 
     def test_no_footer(self):
-        html = """<h4>About This Image</h4><p>Some text<a href="some_url" target="_self">href_text</a> continued description.</p>"""
+        html = self.construct_html("h4", False)
         self.assertRaises(ValueError, self.scraper.get_image_description, html)
+
+    def test_h3_parsing(self):
+        html = self.construct_html("h3", True)
+
+        expected = """<p>Some text<a href="some_url" target="_self">href_text</a> continued description.</p><p>This is another paragraph</p><p>Include Me!</p>"""
+
+        self.assertEqual(self.scraper.get_image_description(html), expected)
 
 
 class TestGetImageCredits(TestCase):

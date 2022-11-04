@@ -21,7 +21,7 @@ class Scraper:
         """
 
         soup = BeautifulSoup(html, "html.parser")
-        header = soup.find("h4", string=re.compile("about", re.I))
+        header = soup.find(["h4", "h3"], string=re.compile("about", re.I))
 
         if not header or not soup.find("footer"):
             raise ValueError(
