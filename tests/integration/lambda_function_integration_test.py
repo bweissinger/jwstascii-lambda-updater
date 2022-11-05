@@ -1,4 +1,3 @@
-from bs4 import BeautifulSoup
 import lambda_function
 import responses
 import re
