@@ -78,7 +78,7 @@ class TestGetImageDownloadUrl(TestCase):
             "https://stsci-opo.org/STScI-01G8GYE2PQWY96TDX66CHQRMPQ.png",
         )
 
-    def test_2k_image_priority(self):
+    def test_2k_image_portrait_priority(self):
         html = (
             self.div_start
             + self.download_options
