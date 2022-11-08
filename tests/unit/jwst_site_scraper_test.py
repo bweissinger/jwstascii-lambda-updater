@@ -218,9 +218,7 @@ class TestGetImageLinksFromGallerySearch(TestCase):
 
     def test_no_valid_links_found(self):
         self.scraper.gallery_page_html = """<a href="/contents/image_url_2" class="link-wrap" title="some title"></a>"""
-        self.assertRaises(
-            RuntimeError, self.scraper.get_image_links_from_gallery_search
-        )
+        self.assertEqual(self.scraper.get_image_links_from_gallery_search(), [])
 
     def test_ignore_list(self):
         with open("tests/resources/html/gallery_image_links.html", "r") as file:

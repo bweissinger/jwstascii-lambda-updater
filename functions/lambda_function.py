@@ -236,28 +236,37 @@ def get_next_image_url(
         ignore_all_archive_links (int, optional): Ignore all previously used links. Takes precedent over ignore_last_n_archive_links.
         ignore_last_n_archive_links (int, optional): Number of archive links to ignore. Positive numbers ignore the most recent n archive links, negative ignore the oldest n links.
 
+    Raises:
+            RuntimeError: If no available links are found.
+
     Returns:
         str: Url of the found image.
     """
+
     scraper.get_next_gallery_search_page()
 
-    # At end of all available image links, no more pages to search
-    if not scraper.get_image_links_from_gallery_search():
-        return ""
-
-    # Only use image links that do not fit search pattern in ignore_regex
-    links = scraper.get_image_links_from_gallery_search(ignore_regex)
     used_links = site_file_tools.get_links_from_archive_list(Path(repo_dir, "archive"))
-    if not ignore_all_archive_links:
-        if ignore_last_n_archive_links < 0:
-            used_links = used_links[ignore_last_n_archive_links:]
-        elif ignore_last_n_archive_links > 0:
-            used_links = used_links[:ignore_last_n_archive_links]
 
-    available_links = set(links) - set(used_links)
+    # Ignore only most recen 'n' archive links if desired. All other links will be eligible
+    if not ignore_all_archive_links:
+        links_to_ignore = used_links[:ignore_last_n_archive_links]
+    else:
+        links_to_ignore = used_links
+
+    links = scraper.get_image_links_from_gallery_search(ignore_regex)
+
+    if not links and not scraper.get_image_links_from_gallery_search():
+        links = used_links
+
     try:
-        return random.sample(available_links, 1)[0]
+        return random.sample(list(set(links) - set(links_to_ignore)), 1)[0]
     except ValueError:
+        if not scraper.get_image_links_from_gallery_search():
+            raise RuntimeError(
+                "End of image search reached and no links are available for use.\n used_links: %s\nlinks_to_ignore: %s\n"
+                % (used_links, links_to_ignore)
+            )
+
         # Search next page for available links
         return get_next_image_url(
             scraper,

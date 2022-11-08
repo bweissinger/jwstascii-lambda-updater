@@ -14,31 +14,39 @@ class TestGetNextImageUrl(TestCase):
     def test_first_page(self, links_from_archive):
         links_from_archive.return_value = ["link_1"]
         self.scraper.get_image_links_from_gallery_search.side_effect = [
-            ["link_1", "link_2", "link_3"],
-            ["link_1", "link_2"],
-            ["link_4", "link_5"],
-            ["link_4"],
+            ["link_1", "link_2"]
         ]
         links = lambda_function.get_next_image_url(self.scraper, [], Path("some_path"))
         self.assertEqual(links, "link_2")
 
     def test_multiple_pages(self, links_from_archive):
-        links_from_archive.return_value = ["link_1", "link_2", "link_3"]
+        links_from_archive.return_value = ["link_1"]
         self.scraper.get_image_links_from_gallery_search.side_effect = [
-            ["link_1", "link_2", "link_3"],
+            ["link_1"],
             ["link_1", "link_2"],
-            ["link_4", "link_5"],
-            ["link_4"],
+            ["link_3"],
         ]
         links = lambda_function.get_next_image_url(self.scraper, [], Path("some_path"))
-        self.assertEqual(links, "link_4")
+        self.assertEqual(links, "link_3")
+
+    def test_no_links_available(self, links_from_archive):
+        links_from_archive.return_value = ["link_1"]
+        self.scraper.get_image_links_from_gallery_search.side_effect = [
+            [],
+            [],
+            [],
+        ]
+        self.assertRaises(
+            RuntimeError,
+            lambda_function.get_next_image_url,
+            self.scraper,
+            [],
+            Path("some_path"),
+        )
 
     def test_correct_path_for_archive_links(self, links_from_archive):
         links_from_archive.return_value = []
-        self.scraper.get_image_links_from_gallery_search.side_effect = [
-            ["link_1"],
-            ["link_2"],
-        ]
+        self.scraper.get_image_links_from_gallery_search.side_effect = [["link_1"]]
         lambda_function.get_next_image_url(self.scraper, [], Path("some_path"))
         links_from_archive.assert_called_once_with(Path("some_path/archive"))
 
@@ -46,7 +54,6 @@ class TestGetNextImageUrl(TestCase):
         links_from_archive.return_value = []
         self.scraper.get_image_links_from_gallery_search.side_effect = [
             ["link_1"],
-            ["link_2"],
         ]
         lambda_function.get_next_image_url(
             self.scraper, ["ignore_1", "ignore_2"], Path("some_path")
@@ -56,26 +63,10 @@ class TestGetNextImageUrl(TestCase):
             ["ignore_1", "ignore_2"]
         )
 
-    def test_ignore_archive_links(self, links_from_archive):
-        links_from_archive.return_value = ["link_1", "link_2"]
-        self.scraper.get_image_links_from_gallery_search.side_effect = [
-            ["link_1", "link_2", "link_3"],
-            ["link_1", "link_2", "link_3"],
-            ["link_4", "link_5"],
-            ["link_4"],
-        ]
-        link = lambda_function.get_next_image_url(
-            self.scraper, [], Path("some_path"), ignore_all_archive_links=False
-        )
-        self.assertTrue(link == "link_3")
-
     def test_ignore_n_links(self, links_from_archive):
         links_from_archive.return_value = ["link_1", "link_2", "link_3"]
         self.scraper.get_image_links_from_gallery_search.side_effect = [
-            ["link_1", "link_2", "link_3"],
-            ["link_1", "link_2", "link_3"],
-            ["link_4", "link_5"],
-            ["link_4"],
+            ["link_1", "link_2", "link_3"]
         ]
         link = lambda_function.get_next_image_url(
             self.scraper,
