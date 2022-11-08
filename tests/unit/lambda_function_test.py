@@ -115,44 +115,16 @@ class TestGetNewImageInfo(TestCase):
         self.scraper = Mock()
         return super().setUp()
 
-    def test_get_next_image_url_call(self, get_next_image_url):
-        get_next_image_url.return_value = "url"
-        lambda_function.get_new_image_info(
-            self.scraper, ["ignore_1"], Path("path/to/repo"), 1
-        )
-        get_next_image_url.assert_called_once_with(
-            self.scraper, ["ignore_1"], Path("path/to/repo")
-        )
-
-    def test_get_next_image_url_called_twice(self, get_next_image_url):
-        get_next_image_url.side_effect = ["", "url"]
-        lambda_function.get_new_image_info(
-            self.scraper, ["ignore_1"], Path("path/to/repo"), 1
-        )
-        get_next_image_url.assert_called_with(
-            self.scraper,
-            ["ignore_1"],
-            Path("path/to/repo"),
-            ignore_archive_links=False,
-            ignore_last_n_archive_links=1,
-        )
-
     def test_get_url_with_retries(self, get_next_image_url):
-        get_next_image_url.side_effect = ["image_url", "image_url"]
-        lambda_function.get_new_image_info(
-            self.scraper, ["ignore_1"], Path("path/to/repo"), 1
-        )
+        lambda_function.get_new_image_info(self.scraper, "image_url")
         self.scraper.get_url_with_retries.assert_called_once_with("image_url", {}, 5)
 
     def test_correct_return(self, get_next_image_url):
-        get_next_image_url.side_effect = ["", "image_url"]
         self.scraper.get_image_title.return_value = "title"
         self.scraper.get_image_description.return_value = "description"
         self.scraper.get_image_credits.return_value = "credits"
         self.scraper.get_image_download_url.return_value = "download_url"
-        output = lambda_function.get_new_image_info(
-            self.scraper, ["ignore_1"], Path("path/to/repo"), 1
-        )
+        output = lambda_function.get_new_image_info(self.scraper, "image_url")
         self.assertEqual(
             output,
             {
@@ -160,7 +132,6 @@ class TestGetNewImageInfo(TestCase):
                 "image_description": "description",
                 "image_credits": "credits",
                 "image_download_url": "download_url",
-                "image_page_url": "image_url",
             },
         )
 

@@ -41,7 +41,7 @@ class TestLambdaFunction(TestCase):
         )
         self.add_response_from_file(
             Path(html_base_path, "jwst_image_page.html"),
-            re.compile("https://webbtelescope.org/contents/media/images*"),
+            re.compile("https://webbtelescope.org/contents/media/images/*"),
         )
         self.add_response_from_file(
             Path("tests", "resources", "images", "test_image.png"),
