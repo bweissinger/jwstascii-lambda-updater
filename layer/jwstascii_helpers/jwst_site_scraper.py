@@ -185,7 +185,10 @@ class Scraper:
             matched = False
 
         if not links:
-            raise RuntimeError("No links found on page. \n%s")
+            raise RuntimeError(
+                "No links found on page. Page num: %s\nhtml: %s"
+                % (self.page_num, self.gallery_page_html)
+            )
 
         return links
 
