@@ -31,12 +31,17 @@ def lambda_handler(event: Dict[str, Any], context: object) -> Dict[str, Any]:
         )
 
     site_scraper = jwst_site_scraper.Scraper()
-    image_info = get_new_image_info(
+
+    image_page_url = get_next_image_url(
         site_scraper,
         event["ignore_regex"],
         repo.repo_dir,
-        event["num_links_to_ignore_when_no_new"],
+        ignore_all_archive_links=False,
+        ignore_last_n_archive_links=event["num_links_to_ignore_when_no_new"],
     )
+
+    image_info = get_new_image_info(site_scraper, image_page_url)
+
     image_file_name = add_new_image(
         site_scraper,
         image_info["image_download_url"],
@@ -57,7 +62,7 @@ def lambda_handler(event: Dict[str, Any], context: object) -> Dict[str, Any]:
     )
 
     if event["test_url"]:
-        image_info["image_page_url"] = event["test_url"]
+        image_page_url = event["test_url"]
 
     site_file_tools.generate_from_template(
         "new_page.html",
@@ -70,7 +75,7 @@ def lambda_handler(event: Dict[str, Any], context: object) -> Dict[str, Any]:
             "previous_date": previous_page_date.strftime("%d|%m|%y"),
             "image_title": image_info["image_title"],
             "image_path": Path("/images", image_file_name),
-            "link_to_jwst_website": image_info["image_page_url"],
+            "link_to_jwst_website": image_page_url,
             "image_credits": image_info["image_credits"],
             "image_description": image_info["image_description"],
         },
@@ -93,7 +98,7 @@ def lambda_handler(event: Dict[str, Any], context: object) -> Dict[str, Any]:
         Path(today_date.strftime("/%Y/%B/%d").lower()),
         today_date,
         image_info["image_title"],
-        image_info["image_page_url"],
+        image_page_url,
     )
 
     push_repo(repo, today_date, event["git_author"], event["git_email"])
@@ -155,43 +160,25 @@ def add_new_image(
 
 
 def get_new_image_info(
-    site_scraper: jwst_site_scraper.Scraper,
-    ignore_regex: List[str],
-    repo_dir: Path,
-    ignore_last_n_links_when_no_new: int,
+    site_scraper: jwst_site_scraper.Scraper, image_page_url: str
 ) -> Dict[str, str]:
     """Scrapes image info from the jwst website.
 
 
     Args:
         site_scraper (jwst_site_scraper.Scraper): Scraper object.
-        ignore_regex (List[str]): A list of regex strings to use for filtering images.
-        repo_dir (Path): _description_
-        ignore_last_n_links_when_no_new (int): Number of previous images to ignore when there are no new images available. Positive values will ignore the latest n links. Negative values will ignore the oldest n links.
+        image_page_url (str): The url of the image's page, not the url of the image itself.
 
     Returns:
         Dict[str:str]: A dictionary object containing image attributes.
 
     """
-    url = get_next_image_url(site_scraper, ignore_regex, repo_dir)
-
-    # Get previously used image if no new images are available
-    if not url:
-        url = get_next_image_url(
-            site_scraper,
-            ignore_regex,
-            repo_dir,
-            ignore_archive_links=False,
-            ignore_last_n_archive_links=ignore_last_n_links_when_no_new,
-        )
-
-    html = site_scraper.get_url_with_retries(url, {}, 5).text
+    html = site_scraper.get_url_with_retries(image_page_url, {}, 5).text
     return {
         "image_title": site_scraper.get_image_title(html),
         "image_description": site_scraper.get_image_description(html),
         "image_credits": site_scraper.get_image_credits(html),
         "image_download_url": site_scraper.get_image_download_url(html),
-        "image_page_url": url,
     }
 
 
