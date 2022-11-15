@@ -6,6 +6,8 @@ from os import path
 
 
 class Scraper:
+    CREDITS_RE = re.compile("Credits*", re.I)
+
     def get_image_description(self, html: str) -> str:
         """
         Scrapes the description text html for the provided jwst image page.
@@ -19,24 +21,25 @@ class Scraper:
         Raises:
             ValueError: Raised if image description cannot be found.
         """
+        try:
+            soup = BeautifulSoup(html, "html.parser")
+            header = soup.find("h3", string=re.compile("caption", re.I))
 
-        soup = BeautifulSoup(html, "html.parser")
-        header = soup.find("h3", string=re.compile("caption", re.I))
+            image_description = ""
+            for sibling in header.next_siblings:
+                if sibling.name == "h3" and re.match(self.CREDITS_RE, sibling.text):
+                    break
+                image_description += str(sibling)
 
-        if not header or not soup.find("footer"):
-            raise ValueError(
-                "Could not find image description on page. This is caused by a missing header or footer. Provided html: \n'%s'"
-                % html
+            strainer = SoupStrainer(["a", "p"])
+            return (
+                BeautifulSoup(
+                    image_description, "html.parser", parse_only=strainer
+                ).prettify()
+                + "\n"
             )
-
-        image_description = ""
-        for sibling in header.next_siblings:
-            if sibling.name == "footer":
-                break
-            image_description += str(sibling)
-
-        strainer = SoupStrainer(["a", "p"])
-        return str(BeautifulSoup(image_description, "html.parser", parse_only=strainer))
+        except AttributeError as e:
+            raise ValueError("Cannot find image description on page: \n%s" % e)
 
     def get_image_credits(self, html: str) -> str:
         """
@@ -52,20 +55,12 @@ class Scraper:
         Returns:
             str: Credits paragraph from the image page.
         """
-        soup = BeautifulSoup(html, "html.parser")
-        footer = soup.find("footer")
-
-        if not footer:
-            raise ValueError("Could not find footer in html: \n%s" % html)
-
-        credits = footer.find("h3", string=re.compile("Credits*", re.I)).find_next("p")
-
-        if not credits:
-            raise ValueError(
-                "Could not find credits image prefix in footer: \n%s" % html
-            )
-
-        return credits.prettify()
+        try:
+            soup = BeautifulSoup(html, "html.parser")
+            credits = soup.find("h3", string=self.CREDITS_RE).find_next("p")
+            return credits.prettify() + "\n"
+        except AttributeError as e:
+            raise ValueError("Could not find image credits on page: \n%s" % e)
 
     def get_image_download_url(self, html: str) -> str:
         """

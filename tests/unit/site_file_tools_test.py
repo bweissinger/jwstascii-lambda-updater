@@ -94,7 +94,7 @@ class TestWriteFile(TestCase):
             site_file_tools.write_file(output_path, "contents")
 
             with open(output_path, "r") as file:
-                self.assertEqual(file.read(), "contents")
+                self.assertEqual(file.read(), "contents\n")
 
     def test_directory_not_overwritten(self):
         with TemporaryDirectory() as tempdir:
@@ -105,7 +105,7 @@ class TestWriteFile(TestCase):
             site_file_tools.write_file(other_path, "b")
 
             with open(output_path, "r") as file:
-                self.assertEqual(file.read(), "contents")
+                self.assertEqual(file.read(), "contents\n")
 
     def test_handles_parent_dir_existing(self):
         with TemporaryDirectory() as tempdir:
@@ -114,7 +114,16 @@ class TestWriteFile(TestCase):
             site_file_tools.write_file(output_path, "contents")
 
             with open(output_path, "r") as file:
-                self.assertEqual(file.read(), "contents")
+                self.assertEqual(file.read(), "contents\n")
+
+    def test_no_double_eof_newline(self):
+        with TemporaryDirectory() as tempdir:
+            makedirs(Path(tempdir, "new_dir"))
+            output_path = Path(tempdir, "new_dir", "my_file.txt")
+            site_file_tools.write_file(output_path, "contents\n")
+
+            with open(output_path, "r") as file:
+                self.assertEqual(file.read(), "contents\n")
 
 
 @freeze_time("2000-01-01")

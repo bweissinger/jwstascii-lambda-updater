@@ -36,6 +36,8 @@ def write_file(output_path: Path, file_content: str) -> None:
     if not exists(output_path.parent):
         makedirs(output_path.parent)
     with open(output_path, "w") as file:
+        if file_content[-1:] != "\n":
+            file_content += "\n"
         file.write(file_content)
 
 
@@ -53,8 +55,8 @@ def generate_from_template(
     """
     template = get_jinja_template(template_name)
     output_html = template.render(**vars_dict)
-    soup = BeautifulSoup(output_html, "html.parser")
-    write_file(output_path, soup.prettify())
+    content = BeautifulSoup(output_html, "html.parser").prettify()
+    write_file(output_path, content)
 
 
 def update_prior_page(
