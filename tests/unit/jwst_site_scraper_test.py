@@ -13,7 +13,8 @@ class TestGetImageDescription(TestCase):
         self.scraper = Scraper()
         self.html = """<h3>Caption</h3><p>Some text<a href="some_url" target="_self">href_text</a> continued description.</p>
                 <p>This is another paragraph</p>
-                <div><button>some button</button><p>Include Me!</p></div>"""
+                <div><button>some button</button><p>Include Me!</p></div>
+                <h3>Credits</h3><p>IMAGE: A, B, C</p>"""
         return super().setUp()
 
     def test_no_header(self):
@@ -21,17 +22,11 @@ class TestGetImageDescription(TestCase):
             ValueError, self.scraper.get_image_description, "No header here."
         )
 
-    def test_empty_string(self):
-        self.assertRaises(ValueError, self.scraper.get_image_description, "")
-
     def test_correctly_parsed_html(self):
         html = self.html + """<footer>Footer stuff here</footer>"""
-        expected = """<p>Some text<a href="some_url" target="_self">href_text</a> continued description.</p><p>This is another paragraph</p><p>Include Me!</p>"""
+        expected = """<p>\n Some text\n <a href="some_url" target="_self">\n  href_text\n </a>\n continued description.\n</p>\n<p>\n This is another paragraph\n</p>\n<p>\n Include Me!\n</p>\n"""
 
         self.assertEqual(self.scraper.get_image_description(html), expected)
-
-    def test_no_footer(self):
-        self.assertRaises(ValueError, self.scraper.get_image_description, self.html)
 
 
 class TestGetImageCredits(TestCase):
@@ -39,15 +34,15 @@ class TestGetImageCredits(TestCase):
         self.scraper = Scraper()
         return super().setUp()
 
-    def test_no_footer(self):
-        html = """<h3>Credits</h3><p>IMAGE: A, B, C</p>"""
+    def test_no_header(self):
+        html = """<p>IMAGE: A, B, C</p>"""
         self.assertRaises(ValueError, self.scraper.get_image_credits, html)
 
     def test_correct_parsing(self):
         html = """<footer><h3>Credits</h3><p>IMAGE: A, B, C<br>IMAGE PROCESSING: D</p></footer>"""
         self.assertEqual(
             self.scraper.get_image_credits(html),
-            "<p>\n IMAGE: A, B, C\n <br/>\n IMAGE PROCESSING: D\n</p>",
+            "<p>\n IMAGE: A, B, C\n <br/>\n IMAGE PROCESSING: D\n</p>\n",
         )
 
 
