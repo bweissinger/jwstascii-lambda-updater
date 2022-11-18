@@ -42,7 +42,7 @@ jobs:
           command: aws s3 cp build/jwstascii-lambda-updater.zip s3://jwstascii-lambda-updater/jwstascii-lambda-updater.zip
       - run:        
           name: Deploy updated lambda function      
-          command: aws lambda update-function-code --function-name jwstascii-updater --s3-bucket jwstascii-lambda-updater --s3-key build/jwstascii-lambda-updater.zip
+          command: aws lambda update-function-code --function-name jwstascii-updater --s3-bucket jwstascii-lambda-updater --s3-key jwstascii-lambda-updater.zip
 
 workflows:
   lambda_updater_ci:
