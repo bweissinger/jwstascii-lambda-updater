@@ -1,5 +1,5 @@
 # jwstascii-lambda-updater
-![Travis (.com)](https://img.shields.io/travis/com/bweissinger/jwstascii-lambda-updater) [![Coverage Status](https://coveralls.io/repos/github/bweissinger/jwstascii-lambda-updater/badge.svg?branch=main)](https://coveralls.io/github/bweissinger/jwstascii-lambda-updater?branch=main)
+[![bweissinger](https://circleci.com/gh/bweissinger/jwstascii-lambda-updater.svg?style=shield)](https://app.circleci.com/gh/bweissinger/jwstascii-lambda-updater) [![Coverage Status](https://coveralls.io/repos/github/bweissinger/jwstascii-lambda-updater/badge.svg?branch=main)](https://coveralls.io/github/bweissinger/jwstascii-lambda-updater?branch=main)
 <br>
 AWS Lambda function for updating jwstascii.com.
 This function probably isn't that useful for you... But feel free to browse.
