@@ -1,0 +1,56 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@2
+  aws-cli: circleci/aws-cli@3
+
+jobs:
+  build_and_test:
+    build-and-test:
+    executor:
+      name: python/default
+      tag: '3.9'
+    steps:
+      - checkout
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: run tests
+          command: coverage run -m pytest
+      - run:
+          name: Upload coverage
+          command: coveralls
+      - run:
+          name: Package the function
+          command: make package
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build/jwstascii-lambda-updater.zip
+
+  deploy: 
+    executor: aws-cli/default  
+    steps:    
+      - attach_workspace:
+          at: ./
+      - aws-cli/setup:
+          aws-region: AWS_DEFAULT_REGION
+          aws-access-key-id: AWS_ACCESS_KEY_ID
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
+      - run:
+          name: Upload function to S3        
+          command: aws s3 cp build/jwstascii-lambda-updater.zip s3://jwstascii-lambda-updater/jwstascii-lambda-updater.zip
+      - run:        
+          name: Deploy updated lambda function      
+          command: aws lambda update-function-code --function-name jwstascii-lambda-updater --s3-bucket jwstascii-lambda-updater --s3-key build/jwstascii-lambda-updater.zip
+
+workflows:
+  lambda_updater_ci:
+    jobs:
+      - build_and_test
+      - deploy:
+          requires:
+            - build_and_test
+          filters:
+            branches:
+              only: main
