@@ -1,9 +1,9 @@
 version: 2.1
 
 orbs:
-  python: circleci/python@2.1.1
-  aws-cli: circleci/aws-cli@3.1.3
-  coveralls: coveralls/coveralls@1.0.6
+  python: circleci/python@2
+  aws-cli: circleci/aws-cli@3
+  coveralls: coveralls/coveralls@1
 
 jobs:
   build_and_test:
