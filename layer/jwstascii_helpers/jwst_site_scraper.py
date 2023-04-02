@@ -7,6 +7,9 @@ from os import path
 
 class Scraper:
     CREDITS_RE = re.compile("Credits*", re.I)
+    HEADERS = {
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0"
+    }
 
     def get_image_description(self, html: str) -> str:
         """
@@ -214,7 +217,9 @@ class Scraper:
             session.mount(
                 "https://", requests.adapters.HTTPAdapter(max_retries=retries)
             )
-            result = session.get(url, params=payload, stream=stream)
+            result = session.get(
+                url, params=payload, headers=self.HEADERS, stream=stream
+            )
             if not result.ok:
                 raise RuntimeError(
                     "Html request response error\n%s payload: %s" % (url, str(payload))
