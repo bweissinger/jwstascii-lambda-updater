@@ -1,4 +1,4 @@
-from rvmendillo_image_to_ascii import ImageToASCII
+from jwstascii_helpers.rvmendillo_image_to_ascii import ImageToASCII
 from os import makedirs
 from os.path import exists
 from pathlib import Path
