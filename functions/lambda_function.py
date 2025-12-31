@@ -1,6 +1,7 @@
 import os
 import boto3
 import random
+import re
 from typing import Any, Dict, List
 from pathlib import Path
 from datetime import datetime, timedelta, date
@@ -49,6 +50,7 @@ def lambda_handler(event: Dict[str, Any], context: object) -> Dict[str, Any]:
         event["ascii_charset"],
         event["s3_bucket"],
         event["temp_dir"],
+        re.sub(r'\W+', '', image_info["image_title"])
     )
 
     new_page_path = Path(
@@ -128,6 +130,7 @@ def add_new_image(
     charset: str,
     bucket_name: str,
     temp_dir: Path,
+    image_name: str
 ) -> str:
     """
     Creates an ascii art image from the jwst image at the given url, and uploads
@@ -141,21 +144,24 @@ def add_new_image(
         bucket_name (str): Name of the S3 bucket.
         temp_dir (str): Path of the temporary directory to use for image conversion. For
             AWS Lambda, /tmp is user writable.
+        image_name (str): Disired image file name (without type extension).
 
     Returns:
         str: File name of the image.
+        
     """
     site_scraper.download_image(image_url, temp_dir)
     for file in os.listdir(temp_dir):
         if file.endswith(".tif") or file.endswith(".png"):
             image_file_name = file
             image_path = Path(temp_dir, file)
+            suffix = file[-4:]
     try:
         ascii_conversion.convert_image(image_path, num_colums, charset, image_path)
     except UnboundLocalError:
         raise RuntimeError("Could not find suitable image in directory: %s" % temp_dir)
     s3 = boto3.client("s3")
-    s3.upload_file(str(image_path), bucket_name, str(Path("images", image_file_name)))
+    s3.upload_file(str(image_path), bucket_name, str(Path("images", image_name+suffix)))
     return image_file_name
 
 
