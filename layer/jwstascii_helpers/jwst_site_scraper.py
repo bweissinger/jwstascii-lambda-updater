@@ -25,12 +25,7 @@ class Scraper:
             soup = BeautifulSoup(html, "html.parser")
             header = soup.find("h3", string=re.compile("caption", re.I))
 
-            image_description = ""
-            for sibling in header.next_siblings:
-                if sibling.name == "h3" and re.match(self.CREDITS_RE, sibling.text):
-                    break
-                image_description += str(sibling)
-
+            image_description = str(soup.find("div", {"class": "stma-custom-fields-wrapper"}).next.next)
             strainer = SoupStrainer(["a", "p"])
             return (
                 BeautifulSoup(
@@ -57,8 +52,7 @@ class Scraper:
         """
         try:
             soup = BeautifulSoup(html, "html.parser")
-            credits = soup.find("h3", string=self.CREDITS_RE).find_next("p")
-            return credits.prettify() + "\n"
+            return soup.find("span", string="Credit").parent.next_sibling.text
         except AttributeError as e:
             return "NASA, Unknown"
 
@@ -76,40 +70,30 @@ class Scraper:
             str: Url of the image.
         """
         soup = BeautifulSoup(html, "html.parser")
-        link_list = soup.find("div", {"class": "media-library-links-list"})
+        link_list = soup.find("div", {"class": "stma-downloads-wrapper"})
 
         if not link_list:
             raise ValueError("Unable to locate download link list in html: \n%s" % html)
 
-        link_priority_regex = [
-            re.compile(r"2000\s?x\s?\d+.*PNG.*", re.I),  # 2k PNG landscape
-            re.compile(r".*x\s?2000+.*PNG.*", re.I),  # 2k PNG portrait
-            re.compile(r"full\sres.*\d+\s?x\s?\d+.*PNG.*", re.I),  # Full res PNG
-            re.compile(r"full\sres.*\d+\s?x\s?\d+.*TIF.*", re.I),  # Full res tif
-        ]
+        # Order to prioritize image links. JPGs and PNGs are smaller than tif and are preferred
+        link_list_priority = [re.compile(r".*\.jpg"), re.compile(r".*\.png"), re.compile(r".*\.tif")]
 
-        # Due to inner elements in the <a> tags, we cannot simply search by
-        #   link_list.find('a', string=regex). The .string attribute resolves
-        #   to None in this instance.
-        link_list = link_list.find_all(
-            "a", href=[re.compile(r".*.png"), re.compile(r".*.tif")]
-        )
-
-        for regex in link_priority_regex:
-            for link in link_list:
-                if re.match(regex, str(link.text)):
-                    break
-                else:
-                    link = None
-            if link:
+        for search in link_list_priority:
+            # Due to inner elements in the <a> tags, we cannot simply search by
+            #   link_list.find('a', string=regex). The .string attribute resolves
+            #   to None in this instance.
+            links = link_list.find_all(
+                "a", href=[search]
+            )
+            if links:
                 break
 
-        if not link:
+        if not links:
             raise ValueError(
                 "Unable to locate valid download link in html: \n%s" % html
             )
 
-        url = link["href"]
+        url = links[0]["href"]
 
         if url.startswith("//"):
             url = "https:" + url
