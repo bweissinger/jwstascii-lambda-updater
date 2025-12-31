@@ -19,10 +19,7 @@ class Scraper:
             html (str): The html of the jwst image page.
 
         Returns:
-            str: String of scraped description html.
-
-        Raises:
-            ValueError: Raised if image description cannot be found.
+            str: String of scraped description html. "Description unavailable." if description not found.
         """
         try:
             soup = BeautifulSoup(html, "html.parser")
@@ -42,7 +39,7 @@ class Scraper:
                 + "\n"
             )
         except AttributeError as e:
-            raise ValueError("Cannot find image description on page: \n%s" % e)
+            return "Description unavailable."
 
     def get_image_credits(self, html: str) -> str:
         """
@@ -56,14 +53,14 @@ class Scraper:
                 is found, or if the resulting credits list is blank.
 
         Returns:
-            str: Credits paragraph from the image page.
+            str: Credits paragraph from the image page. "NASA, Unknown" if credits not found.
         """
         try:
             soup = BeautifulSoup(html, "html.parser")
             credits = soup.find("h3", string=self.CREDITS_RE).find_next("p")
             return credits.prettify() + "\n"
         except AttributeError as e:
-            raise ValueError("Could not find image credits on page: \n%s" % e)
+            return "NASA, Unknown"
 
     def get_image_download_url(self, html: str) -> str:
         """
@@ -130,14 +127,14 @@ class Scraper:
             ValueError: Raises if the title cannot be located in the meta tags.
 
         Returns:
-            str: A string containing the title of the image.
+            str: A string containing the title of the image. "Unknown" if title not found.
         """
         try:
             soup = BeautifulSoup(html, "html.parser", parse_only=SoupStrainer("meta"))
             content = soup.find("meta", property="og:title")["content"]
             return BeautifulSoup(content, "html.parser").prettify().strip("\n")
         except TypeError:
-            raise ValueError("Could not find title in meta tags. \n%s" % html)
+            return "Link to Original Image"
 
     def get_next_gallery_search_page(self):
         """
