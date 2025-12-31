@@ -25,12 +25,7 @@ class Scraper:
             soup = BeautifulSoup(html, "html.parser")
             header = soup.find("h3", string=re.compile("caption", re.I))
 
-            image_description = ""
-            for sibling in header.next_siblings:
-                if sibling.name == "h3" and re.match(self.CREDITS_RE, sibling.text):
-                    break
-                image_description += str(sibling)
-
+            image_description = str(soup.find("div", {"class": "stma-custom-fields-wrapper"}).next.next)
             strainer = SoupStrainer(["a", "p"])
             return (
                 BeautifulSoup(
@@ -57,8 +52,7 @@ class Scraper:
         """
         try:
             soup = BeautifulSoup(html, "html.parser")
-            credits = soup.find("h3", string=self.CREDITS_RE).find_next("p")
-            return credits.prettify() + "\n"
+            return soup.find("span", string="Credit").parent.next_sibling.text
         except AttributeError as e:
             return "NASA, Unknown"
 
