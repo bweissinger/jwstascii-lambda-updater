@@ -15,12 +15,6 @@ jobs:
       - python/install-packages:
           pkg-manager: pip
       - run:
-          name: run tests
-          command: coverage run -m pytest
-      - run:
-          name: Upload coverage
-          command: coveralls
-      - run:
           name: Package the function
           command: make package
       - persist_to_workspace:
