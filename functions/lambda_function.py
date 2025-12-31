@@ -153,15 +153,14 @@ def add_new_image(
     site_scraper.download_image(image_url, temp_dir)
     for file in os.listdir(temp_dir):
         if file.endswith(".tif") or file.endswith(".png"):
-            image_file_name = file
+            image_file_name = image_name + file[-4:]
             image_path = Path(temp_dir, file)
-            suffix = file[-4:]
     try:
         ascii_conversion.convert_image(image_path, num_colums, charset, image_path)
     except UnboundLocalError:
         raise RuntimeError("Could not find suitable image in directory: %s" % temp_dir)
     s3 = boto3.client("s3")
-    s3.upload_file(str(image_path), bucket_name, str(Path("images", image_name+suffix)))
+    s3.upload_file(str(image_path), bucket_name, str(Path("images", image_file_name)))
     return image_file_name
 
 
